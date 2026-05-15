@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Haid Calender | Tracker</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+<body class="light-theme">
+
+    <div class="app-container">
+        <header class="main-header">
+            <h1>Haid Calender</h1>
+            <button id="themeToggle" class="icon-btn">
+                <i class="fas fa-moon"></i>
+            </button>
+        </header>
+
+        <main class="dashboard">
+            <section class="card calendar-section animate-fade-in">
+                <div class="calendar-header">
+                    <button id="prevMonth"><i class="fas fa-chevron-left"></i></button>
+                    <h2 id="monthDisplay">Mei 2024</h2>
+                    <button id="nextMonth"><i class="fas fa-chevron-right"></i></button>
+                </div>
+                <div class="calendar-grid-header">
+                    <span>S</span><span>S</span><span>R</span><span>K</span><span>J</span><span>S</span><span>M</span>
+                </div>
+                <div id="calendarGrid" class="calendar-grid">
+                </div>
+            </section>
+
+            <section class="action-menu animate-slide-up">
+                <button class="action-item" onclick="openInput('start')">
+                    <div class="icon-circle primary-bg"><i class="fas fa-play text-white"></i></div>
+                    <span>Awal Haid</span>
+                </button>
+                <button class="action-item" onclick="openInput('end')">
+                    <div class="icon-circle primary-bg"><i class="fas fa-stop text-white"></i></div>
+                    <span>Akhir Haid</span>
+                </button>
+                <button class="action-item" onclick="openInput('note')">
+                    <div class="icon-circle primary-bg"><i class="fas fa-pen text-white"></i></div>
+                    <span>Catatan</span>
+                </button>
+            </section>
+
+            <section class="card ai-card animate-fade-in">
+                <div class="ai-header">
+                    <i class="fas fa-wand-magic-sparkles"></i>
+                    <h3>AI Insight</h3>
+                </div>
+                <p id="aiStatus">Status: Menganalisis siklus Anda...</p>
+
+                <div class="recommendation-grid">
+                    <div class="rec-item">
+                        <i class="fas fa-utensils"></i>
+                        <span>Makanan: Sayuran Hijau & Cokelat Hitam</span>
+                    </div>
+                    <div class="rec-item">
+                        <i class="fas fa-person-running"></i>
+                        <span>Kegiatan: Yoga Ringan</span>
+                    </div>
+                </div>
+            </section>
+
+            <section class="card chart-section animate-fade-in">
+                <h3>Grafik Siklus (7 Bulan Terakhir)</h3>
+                <div class="chart-container">
+                    <div class="bar" style="--h: 28px" data-label="Jan"></div>
+                    <div class="bar" style="--h: 30px" data-label="Feb"></div>
+                    <div class="bar" style="--h: 26px" data-label="Mar"></div>
+                    <div class="bar active" style="--h: 28px" data-label="Apr"></div>
+                    <div class="bar" style="--h: 0px" data-label="Mei"></div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script type="module" src="script.js"></script>
+</body>
+
+</html>
