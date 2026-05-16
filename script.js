@@ -330,7 +330,8 @@ async function updateAIInsight() {
         let historyText = cycleHistory.map(c => `Bulan ${c.start ? new Date(c.start).getMonth()+1 : '?'}: Mulai ${c.start}, Selesai ${c.end}`).join('; ');
         const noteContext = cycleData.note ? `. Catatan terakhir bulan ini: ${cycleData.note}.` : "";
         const profileContext = userProfile.name ? ` Nama saya ${userProfile.name}, umur ${userProfile.age} tahun. Durasi haid normal saya ${userProfile.duration} hari. Keluhan umum: ${userProfile.condition}.` : "";
-        const prompt = `Riwayat haid saya beberapa bulan terakhir: ${historyText}. Hari ini tanggal ${new Date().toISOString().split('T')[0]}${noteContext}${profileContext} Berikan analisis singkat status saya dan 2 rekomendasi (1 makanan dan minuman, 1 kegiatan) dalam format JSON: {"status": "string", "makanan dan minuman": "string", "kegiatan": "string"}. Ingat, kembalikan HANYA JSON murni tanpa markdown, tanpa kalimat tambahan.`;
+        const personaContext = `Gunakan gaya bicara yang ${aiPersona.tone} dan gaya penulisan yang ${aiPersona.style}.`;
+        const prompt = `Riwayat haid saya beberapa bulan terakhir: ${historyText}. Hari ini tanggal ${new Date().toISOString().split('T')[0]}${noteContext}${profileContext} ${personaContext} Berikan analisis singkat status saya dan 2 rekomendasi (1 makanan dan minuman, 1 kegiatan) dalam format JSON: {"status": "string", "makanan dan minuman": "string", "kegiatan": "string"}. Ingat, kembalikan HANYA JSON murni tanpa markdown, tanpa kalimat tambahan.`;
 
         const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
             method: "POST",
@@ -380,11 +381,105 @@ const chatSidebar = document.getElementById('chatSidebar');
 const toggleSidebar = document.getElementById('toggleSidebar');
 const closeSidebar = document.getElementById('closeSidebar');
 const newChatBtn = document.querySelector('.new-chat-btn');
-
-toggleSidebar.addEventListener('click', () => chatSidebar.classList.remove('collapsed'));
-closeSidebar.addEventListener('click', () => chatSidebar.classList.add('collapsed'));
+const historyList = document.getElementById('chatHistoryList');
 
 let chatHistory = [];
+let savedChats = []; // Array of { id, title, messages }
+let activeChatId = null;
+
+async function loadSavedChats() {
+    if (!currentUser) return;
+    const userDocRef = doc(db, "users", currentUser.email);
+    try {
+        const docSnap = await getDoc(userDocRef);
+        if (docSnap.exists()) {
+            savedChats = docSnap.data().savedChats || [];
+            renderHistoryList();
+        }
+    } catch (e) { console.error("Error loading chats", e); }
+}
+
+async function saveAllChats() {
+    if (!currentUser) return;
+    const userDocRef = doc(db, "users", currentUser.email);
+    try {
+        await setDoc(userDocRef, {
+            savedChats: savedChats
+        }, { merge: true });
+    } catch (e) { console.error("Error saving chats", e); }
+}
+
+function renderHistoryList() {
+    historyList.innerHTML = '';
+    savedChats.forEach(chat => {
+        const li = document.createElement('li');
+        if (chat.id === activeChatId) li.classList.add('active');
+        li.innerHTML = `
+            <i class="far fa-message"></i>
+            <span class="chat-title">${chat.title}</span>
+            <div class="chat-item-actions">
+                <button class="action-dots"><i class="fas fa-ellipsis-v"></i></button>
+                <div class="delete-popup">
+                    <button class="delete-btn" onclick="event.stopPropagation(); deleteChat(${chat.id})">
+                        <i class="fas fa-trash"></i> Hapus
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        li.onclick = () => switchChat(chat.id);
+        
+        const dots = li.querySelector('.action-dots');
+        dots.onclick = (e) => {
+            e.stopPropagation();
+            document.querySelectorAll('.delete-popup').forEach(p => p.classList.remove('show'));
+            li.querySelector('.delete-popup').classList.add('show');
+        };
+        
+        historyList.appendChild(li);
+    });
+}
+
+window.deleteChat = (id) => {
+    savedChats = savedChats.filter(c => c.id !== id);
+    if (activeChatId === id) {
+        activeChatId = null;
+        chatHistory = [];
+        chatBox.innerHTML = ''; // Or show welcome
+    }
+    saveAllChats();
+    renderHistoryList();
+};
+
+function switchChat(id) {
+    activeChatId = id;
+    const chat = savedChats.find(c => c.id === id);
+    if (chat) {
+        chatHistory = chat.messages;
+        renderChatMessages();
+        renderHistoryList();
+        if (window.innerWidth <= 768) chatSidebar.classList.add('collapsed');
+    }
+}
+
+function renderChatMessages() {
+    chatBox.innerHTML = '';
+    chatHistory.forEach(msg => {
+        const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        const type = msg.role === 'user' ? 'outgoing' : 'incoming';
+        chatBox.insertAdjacentHTML('beforeend', `
+            <div class="message ${type}">
+                <div class="bubble">${msg.content.replace(/\n/g, '<br>')}<span class="time">${timeStr}</span></div>
+            </div>
+        `);
+    });
+    chatBox.scrollTop = chatBox.scrollHeight;
+}
+
+// Close popups on click outside
+document.addEventListener('click', () => {
+    document.querySelectorAll('.delete-popup').forEach(p => p.classList.remove('show'));
+});
 
 openChatBtn.addEventListener('click', () => {
     chatModal.classList.remove('hidden');
@@ -403,6 +498,8 @@ newChatBtn.addEventListener('click', () => {
         </div>
     `;
     chatHistory = [];
+    activeChatId = null;
+    renderHistoryList();
     if(window.innerWidth <= 768) chatSidebar.classList.add('collapsed');
 });
 
@@ -477,7 +574,7 @@ async function sendChatMessage() {
             body: JSON.stringify({
                 model: 'llama-3.3-70b-versatile',
                 messages: [
-                    { role: "system", content: `Kamu adalah Aina AI, asisten spesialis kesehatan reproduksi wanita. ${profileContext} User memiliki riwayat haid: ${historyText}. Catatan keluhan bulan ini: ${cycleData.note || 'tidak ada'}. Jawab dengan ramah, suportif, informatif, dan ringkas menggunakan bahasa Indonesia.` },
+                    { role: "system", content: `Kamu adalah Aina AI, asisten spesialis kesehatan reproduksi wanita. ${profileContext} User memiliki riwayat haid: ${historyText}. Catatan keluhan bulan ini: ${cycleData.note || 'tidak ada'}. Jawab dengan gaya bicara yang ${aiPersona.tone} dan gaya penulisan yang ${aiPersona.style} menggunakan bahasa Indonesia.` },
                     ...chatHistory.slice(-5) // Send last 5 messages for context
                 ]
             })
@@ -508,3 +605,150 @@ async function sendChatMessage() {
         `);
     }
 }
+
+// Panduan Walkthrough Logic
+const guideBtn = document.getElementById('guideBtn');
+let currentGuideStep = 0;
+const guideSteps = [
+    { 
+        id: 'themeToggle', 
+        title: 'Mode Tema', 
+        text: 'Klik di sini untuk berpindah antara tema Terang dan Gelap sesuai kenyamananmu.' 
+    },
+    { 
+        id: 'userInfo', 
+        title: 'Profil Kamu', 
+        text: 'Klik foto profilmu untuk melengkapi data diri agar analisis AI lebih akurat.' 
+    },
+    { 
+        id: 'prevMonth', 
+        title: 'Navigasi Kalender', 
+        text: 'Gunakan tombol panah ini untuk melihat riwayat atau rencana siklus di bulan lain.' 
+    },
+    { 
+        id: 'cycleChart', 
+        title: 'Grafik Siklus', 
+        text: 'Pantau keteraturan siklusmu di sini. Klik batangnya untuk melihat detail tiap bulan.' 
+    },
+    { 
+        id: 'openChatBtn', 
+        title: 'Tanya Aina AI', 
+        text: 'Punya pertanyaan? Klik tombol chat ini untuk mengobrol langsung dengan asisten AI-mu.' 
+    }
+];
+
+guideBtn.addEventListener('click', () => {
+    chatModal.classList.add('hidden'); // Close chat if open
+    currentGuideStep = 0;
+    startWalkthrough();
+});
+
+function startWalkthrough() {
+    const overlay = document.createElement('div');
+    overlay.className = 'spotlight-overlay';
+    document.body.appendChild(overlay);
+    showStep();
+}
+
+function showStep() {
+    const step = guideSteps[currentGuideStep];
+    const target = document.getElementById(step.id);
+    
+    // Remove old tooltip if exists
+    const oldTooltip = document.querySelector('.guide-tooltip');
+    if (oldTooltip) oldTooltip.remove();
+
+    if (!target) {
+        finishWalkthrough();
+        return;
+    }
+
+    const rect = target.getBoundingClientRect();
+    const padding = 10;
+    
+    // Create spotlight effect using clip-path
+    const overlay = document.querySelector('.spotlight-overlay');
+    const x = rect.left - padding;
+    const y = rect.top - padding;
+    const w = rect.width + (padding * 2);
+    const h = rect.height + (padding * 2);
+    
+    // Use polygon to punch a hole
+    overlay.style.clipPath = `polygon(
+        0% 0%, 0% 100%, ${x}px 100%, ${x}px ${y}px, ${x+w}px ${y}px, ${x+w}px ${y+h}px, ${x}px ${y+h}px, ${x}px 100%, 100% 100%, 100% 0%
+    )`;
+
+    const tooltip = document.createElement('div');
+    tooltip.className = 'guide-tooltip';
+    tooltip.innerHTML = `
+        <h4>${step.title}</h4>
+        <p>${step.text}</p>
+        <div class="guide-btn-group">
+            <button class="guide-skip" onclick="finishWalkthrough()">Lewati</button>
+            <button class="guide-next" onclick="nextGuideStep()">
+                ${currentGuideStep === guideSteps.length - 1 ? 'Selesai' : 'Lanjut'}
+            </button>
+        </div>
+    `;
+
+    document.body.appendChild(tooltip);
+    
+    // Position tooltip
+    const tRect = tooltip.getBoundingClientRect();
+    let top = y + h + 15;
+    let left = x + (w / 2) - (tRect.width / 2);
+    
+    if (top + tRect.height > window.innerHeight) top = y - tRect.height - 15;
+    if (left < 10) left = 10;
+    if (left + tRect.width > window.innerWidth - 10) left = window.innerWidth - tRect.width - 10;
+    
+    tooltip.style.top = `${top}px`;
+    tooltip.style.left = `${left}px`;
+    
+    target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+window.nextGuideStep = () => {
+    currentGuideStep++;
+    if (currentGuideStep < guideSteps.length) showStep();
+    else finishWalkthrough();
+};
+
+window.finishWalkthrough = () => {
+    const overlay = document.querySelector('.spotlight-overlay');
+    const tooltip = document.querySelector('.guide-tooltip');
+    if (overlay) overlay.remove();
+    if (tooltip) tooltip.remove();
+};
+
+// AI Profile Logic
+const aiProfileBtn = document.getElementById('aiProfileBtn');
+let aiPersona = {
+    tone: 'ramah dan suportif',
+    style: 'singkat namun informatif',
+    focus: 'kesehatan reproduksi dan kenyamanan user'
+};
+
+aiProfileBtn.addEventListener('click', () => {
+    const choice = prompt("Pilih gaya bicara Aina AI:\n1. Ramah & Suportif (Default)\n2. Profesional & Medis\n3. Santai & Seperti Teman\n\nKetik angkanya saja:");
+    
+    if (choice === '1') {
+        aiPersona.tone = 'ramah dan suportif';
+        aiPersona.style = 'informatif';
+    } else if (choice === '2') {
+        aiPersona.tone = 'profesional, formal, dan berbasis medis';
+        aiPersona.style = 'sangat mendalam dan teknis';
+    } else if (choice === '3') {
+        aiPersona.tone = 'santai, menggunakan bahasa gaul yang sopan, dan seperti teman sebaya';
+        aiPersona.style = 'akrab dan menyemangati';
+    }
+    
+    if (choice) alert("Profil AI berhasil diperbarui! Aina AI sekarang akan menjawab dengan gaya " + aiPersona.tone);
+});
+
+// Update loadUserData to also load chats
+const originalLoadUserData = loadUserData;
+loadUserData = async function(email) {
+    await originalLoadUserData(email);
+    await loadSavedChats();
+};
