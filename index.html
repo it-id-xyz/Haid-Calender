@@ -12,11 +12,28 @@
 <body class="light-theme">
 
     <div class="app-container">
+        <!-- Login Overlay -->
+        <div id="loginOverlay" class="login-overlay">
+            <div class="login-card">
+                <h2>Haid Calender</h2>
+                <p>Silakan login untuk menyimpan dan melacak siklus haid kamu secara aman.</p>
+                <button id="loginGoogleBtn" class="google-btn">
+                    <i class="fab fa-google"></i> Login dengan Google
+                </button>
+            </div>
+        </div>
+
         <header class="main-header">
             <h1>Haid Calender</h1>
-            <button id="themeToggle" class="icon-btn">
-                <i class="fas fa-moon"></i>
-            </button>
+            <div class="header-actions">
+                <button id="themeToggle" class="icon-btn">
+                    <i class="fas fa-moon"></i>
+                </button>
+                <div id="userInfo" class="user-profile hidden">
+                    <img id="userAvatar" src="" alt="Avatar">
+                    <button id="logoutBtn" class="logout-btn" title="Logout"><i class="fas fa-sign-out-alt"></i></button>
+                </div>
+            </div>
         </header>
 
         <main class="dashboard">
@@ -89,7 +106,7 @@
             <div id="chat-box" class="chat-box">
                 <div class="welcome-card">
                     <div class="icon-circle primary-bg" style="margin:0 auto 10px auto;"><i class="fas fa-robot text-white"></i></div>
-                    <h2>Aina AI - Haid Edition</h2>
+                    <h2>Lita AI - Haid Edition</h2>
                     <p class="tagline">Tanya apapun tentang siklus haid, kewanitaan, dan kesehatan.</p>
                 </div>
             </div>
