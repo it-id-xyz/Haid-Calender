@@ -33,12 +33,14 @@ themeToggle.addEventListener('click', () => {
 let currentUser = null;
 let cycleHistory = [];
 let cycleData = { start: "", end: "", note: "" };
+let userProfile = { name: "", age: "", duration: "", condition: "" };
 
 const loginOverlay = document.getElementById('loginOverlay');
 const loginGoogleBtn = document.getElementById('loginGoogleBtn');
 const userInfo = document.getElementById('userInfo');
 const userAvatar = document.getElementById('userAvatar');
 const logoutBtn = document.getElementById('logoutBtn');
+const greetingText = document.getElementById('greetingText');
 
 onAuthStateChanged(auth, async (user) => {
     if (user) {
@@ -56,6 +58,8 @@ onAuthStateChanged(auth, async (user) => {
         userInfo.classList.add('hidden');
         cycleHistory = [];
         cycleData = { start: "", end: "", note: "" };
+        userProfile = { name: "", age: "", duration: "", condition: "" };
+        greetingText.innerText = "";
         initCalendar();
     }
 });
@@ -64,20 +68,66 @@ loginGoogleBtn.addEventListener('click', () => {
     signInWithPopup(auth, provider).catch(error => console.error("Login Error", error));
 });
 
+// Dropdown Logic
+const userDropdown = document.getElementById('userDropdown');
+userAvatar.addEventListener('click', (e) => {
+    e.stopPropagation();
+    userDropdown.classList.toggle('active');
+});
+document.addEventListener('click', () => userDropdown.classList.remove('active'));
+
 logoutBtn.addEventListener('click', () => {
     signOut(auth);
 });
+
+// Profile Modal Logic
+const profileModal = document.getElementById('profileModal');
+const openProfileBtn = document.getElementById('openProfileBtn');
+const closeProfileBtn = document.getElementById('closeProfileBtn');
+const saveProfileBtn = document.getElementById('saveProfileBtn');
+
+openProfileBtn.addEventListener('click', () => {
+    document.getElementById('profileName').value = userProfile.name || "";
+    document.getElementById('profileAge').value = userProfile.age || "";
+    document.getElementById('profileDuration').value = userProfile.duration || "";
+    document.getElementById('profileCondition').value = userProfile.condition || "";
+    profileModal.classList.remove('hidden');
+});
+
+closeProfileBtn.addEventListener('click', () => profileModal.classList.add('hidden'));
+
+saveProfileBtn.addEventListener('click', () => {
+    userProfile.name = document.getElementById('profileName').value;
+    userProfile.age = document.getElementById('profileAge').value;
+    userProfile.duration = document.getElementById('profileDuration').value;
+    userProfile.condition = document.getElementById('profileCondition').value;
+    saveUserData();
+    updateGreeting();
+    updateAIInsight();
+    profileModal.classList.add('hidden');
+});
+
+function updateGreeting() {
+    if (userProfile.name) {
+        greetingText.innerText = `Hai, ${userProfile.name}!`;
+    } else {
+        greetingText.innerText = "";
+    }
+}
 
 async function loadUserData(email) {
     const userDocRef = doc(db, "users", email);
     try {
         const docSnap = await getDoc(userDocRef);
         if (docSnap.exists()) {
-            cycleHistory = docSnap.data().cycleHistory || [];
+            const data = docSnap.data();
+            cycleHistory = data.cycleHistory || [];
+            userProfile = data.userProfile || { name: "", age: "", duration: "", condition: "" };
         } else {
             cycleHistory = [];
         }
         cycleData = cycleHistory.length > 0 ? cycleHistory[cycleHistory.length - 1] : { start: "", end: "", note: "" };
+        updateGreeting();
     } catch(e) { console.error("Error loading data", e); }
 }
 
@@ -87,6 +137,7 @@ async function saveUserData() {
     try {
         await setDoc(userDocRef, {
             cycleHistory: cycleHistory,
+            userProfile: userProfile,
             lastUpdated: new Date()
         }, { merge: true });
     } catch(e) { console.error("Error saving data", e); }
@@ -260,7 +311,8 @@ async function updateAIInsight() {
     try {
         let historyText = cycleHistory.map(c => `Bulan ${c.start ? new Date(c.start).getMonth()+1 : '?'}: Mulai ${c.start}, Selesai ${c.end}`).join('; ');
         const noteContext = cycleData.note ? `. Catatan terakhir bulan ini: ${cycleData.note}.` : "";
-        const prompt = `Riwayat haid saya beberapa bulan terakhir: ${historyText}. Hari ini tanggal ${new Date().toISOString().split('T')[0]}${noteContext} Berikan analisis singkat status saya dan 2 rekomendasi (1 makanan dan minuman, 1 kegiatan) dalam format JSON: {"status": "string", "makanan dan minuman": "string", "kegiatan": "string"}. Ingat, kembalikan HANYA JSON murni tanpa markdown, tanpa kalimat tambahan.`;
+        const profileContext = userProfile.name ? ` Nama saya ${userProfile.name}, umur ${userProfile.age} tahun. Durasi haid normal saya ${userProfile.duration} hari. Keluhan umum: ${userProfile.condition}.` : "";
+        const prompt = `Riwayat haid saya beberapa bulan terakhir: ${historyText}. Hari ini tanggal ${new Date().toISOString().split('T')[0]}${noteContext}${profileContext} Berikan analisis singkat status saya dan 2 rekomendasi (1 makanan dan minuman, 1 kegiatan) dalam format JSON: {"status": "string", "makanan dan minuman": "string", "kegiatan": "string"}. Ingat, kembalikan HANYA JSON murni tanpa markdown, tanpa kalimat tambahan.`;
 
         const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
             method: "POST",
@@ -397,6 +449,7 @@ async function sendChatMessage() {
 
     try {
         let historyText = cycleHistory.map(c => `Bulan ${c.start ? new Date(c.start).getMonth()+1 : '?'}: Mulai ${c.start}, Selesai ${c.end}`).join('; ');
+        const profileContext = userProfile.name ? `Nama User: ${userProfile.name}, Umur: ${userProfile.age}, Durasi Normal: ${userProfile.duration} hari, Keluhan Umum: ${userProfile.condition}.` : "";
         const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
             method: 'POST',
             headers: {
@@ -406,7 +459,7 @@ async function sendChatMessage() {
             body: JSON.stringify({
                 model: 'llama-3.3-70b-versatile',
                 messages: [
-                    { role: "system", content: `Kamu adalah Aina AI, asisten spesialis kesehatan reproduksi wanita. User memiliki riwayat haid: ${historyText}. Catatan keluhan bulan ini: ${cycleData.note || 'tidak ada'}. Jawab dengan ramah, suportif, informatif, dan ringkas menggunakan bahasa Indonesia.` },
+                    { role: "system", content: `Kamu adalah Aina AI, asisten spesialis kesehatan reproduksi wanita. ${profileContext} User memiliki riwayat haid: ${historyText}. Catatan keluhan bulan ini: ${cycleData.note || 'tidak ada'}. Jawab dengan ramah, suportif, informatif, dan ringkas menggunakan bahasa Indonesia.` },
                     ...chatHistory.slice(-5) // Send last 5 messages for context
                 ]
             })
