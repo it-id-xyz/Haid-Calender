@@ -44,6 +44,10 @@
                     <span>Akhir Haid</span>
                     <input type="date" id="endDateInput" style="visibility:hidden; position:absolute; width:0; height:0;">
                 </div>
+                <div class="action-item" onclick="openCatatan()">
+                    <div class="icon-circle primary-bg"><i class="fas fa-pen text-white"></i></div>
+                    <span>Catatan</span>
+                </div>
                 <div class="action-item" id="openChatBtn">
                     <div class="icon-circle primary-bg"><i class="fas fa-comments text-white"></i></div>
                     <span>Chat AI</span>
@@ -70,13 +74,8 @@
             </section>
 
             <section class="card chart-section animate-fade-in">
-                <h3>Grafik Siklus (7 Bulan Terakhir)</h3>
-                <div class="chart-container">
-                    <div class="bar" style="--h: 28px" data-label="Jan"></div>
-                    <div class="bar" style="--h: 30px" data-label="Feb"></div>
-                    <div class="bar" style="--h: 26px" data-label="Mar"></div>
-                    <div class="bar active" style="--h: 28px" data-label="Apr"></div>
-                    <div class="bar" style="--h: 0px" data-label="Mei"></div>
+                <h3>Grafik Siklus</h3>
+                <div class="chart-container" id="cycleChart">
                 </div>
             </section>
         </main>
