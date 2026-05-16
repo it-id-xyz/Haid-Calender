@@ -52,28 +52,28 @@ function renderChart() {
         chart.innerHTML = '<p style="text-align:center; width:100%; color:var(--text-light); font-size: 0.9rem; margin-top: 20px;">Belum ada siklus yang dicatat.</p>';
         return;
     }
-    
+
     // Create a dynamic chart based on current month
     const currentM = new Date(cycleData.start).getMonth();
-    for(let i = 4; i >= 0; i--) {
+    for (let i = 4; i >= 0; i--) {
         let m = currentM - i;
-        if(m < 0) m += 12;
+        if (m < 0) m += 12;
         // Simulate previous cycles based on random height, except current one
         const h = i === 0 ? 28 : Math.floor(Math.random() * 10) + 25;
         const isActive = i === 0 ? 'active' : '';
-        chart.innerHTML += `<div class="bar ${isActive}" style="--h: ${h}px" data-label="${monthNames[m].substring(0,3)}"></div>`;
+        chart.innerHTML += `<div class="bar ${isActive}" style="--h: ${h}px" data-label="${monthNames[m].substring(0, 3)}"></div>`;
     }
 }
 
 function initCalendar() {
     const grid = document.getElementById('calendarGrid');
     const monthDisplay = document.getElementById('monthDisplay');
-    
+
     grid.style.opacity = 0;
     setTimeout(() => {
         grid.innerHTML = '';
         monthDisplay.innerText = `${monthNames[currentMonth]} ${currentYear}`;
-        
+
         const firstDay = new Date(currentYear, currentMonth, 1).getDay();
         const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
 
@@ -93,7 +93,7 @@ function initCalendar() {
 
             grid.innerHTML += `<div class="${classes}" onclick="selectDate('${dateStr}')">${day}</div>`;
         }
-        
+
         grid.style.transition = "opacity 0.3s ease";
         grid.style.opacity = 1;
     }, 150);
@@ -147,7 +147,7 @@ async function updateAIInsight() {
 
     statusEl.innerText = "Status: AI menganalisis siklus Anda...";
 
-    if (!GROQ_API_KEY || GROQ_API_KEY.includes("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")) {
+    if (!GROQ_API_KEY || !GROQ_API_KEY.startsWith("gsk_")) {
         statusEl.innerText = "Status: API Key Groq belum diisi. Menampilkan data default.";
         recEl.innerHTML = `
             <div class="rec-item"><i class="fas fa-utensils"></i><span>Makanan: Air kelapa, cokelat hitam</span></div>
@@ -257,7 +257,7 @@ async function sendChatMessage() {
 
     chatHistory.push({ role: "user", content: msg });
 
-    if (!GROQ_API_KEY || GROQ_API_KEY.includes("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")) {
+    if (!GROQ_API_KEY || !GROQ_API_KEY.startsWith("gsk_")) {
         document.getElementById('loadingBubble').parentElement.remove();
         chatBox.insertAdjacentHTML('beforeend', `
             <div class="message incoming">
