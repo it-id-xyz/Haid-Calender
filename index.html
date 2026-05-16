@@ -99,9 +99,20 @@
             </section>
 
             <section class="card chart-section animate-fade-in" style="position: relative;">
-                <h3>Grafik Siklus</h3>
+                <h3 style="display: flex; align-items: center; gap: 8px;">
+                    Grafik Siklus
+                    <i class="fas fa-question-circle" style="font-size: 0.8rem; color: var(--text-light); cursor: help;" title="Grafik ini menunjukkan panjang siklus haid kamu (dalam hari). Semakin tinggi batangnya, semakin lama siklusnya."></i>
+                </h3>
                 <p style="font-size: 0.75rem; color: var(--text-light); margin-bottom: 15px;">Klik batang grafik untuk melihat detail siklus di bulan tersebut.</p>
-                <div class="chart-container" id="cycleChart">
+                <div class="chart-wrapper">
+                    <div class="y-axis">
+                        <span>45</span>
+                        <span>30</span>
+                        <span>15</span>
+                        <span>0</span>
+                    </div>
+                    <div class="chart-container" id="cycleChart">
+                    </div>
                 </div>
                 
                 <!-- Chart Tooltip -->
