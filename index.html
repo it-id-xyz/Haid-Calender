@@ -99,25 +99,49 @@
 
         <!-- Chat Modal -->
         <div id="chatModal" class="chat-modal hidden">
-            <div class="chat-header">
-                <h2>AI Assistant</h2>
-                <button id="closeChat" class="icon-btn"><i class="fas fa-times"></i></button>
-            </div>
-            <div id="chat-box" class="chat-box">
-                <div class="welcome-card">
-                    <div class="icon-circle primary-bg" style="margin:0 auto 10px auto;"><i class="fas fa-robot text-white"></i></div>
-                    <h2>Lita AI - Haid Edition</h2>
-                    <p class="tagline">Tanya apapun tentang siklus haid, kewanitaan, dan kesehatan.</p>
+            
+            <!-- Chat Sidebar -->
+            <div id="chatSidebar" class="chat-sidebar collapsed">
+                <div class="sidebar-header">
+                    <h3>Aina AI</h3>
+                    <button id="closeSidebar" class="icon-btn"><i class="fas fa-chevron-left"></i></button>
+                </div>
+                <div class="sidebar-menu">
+                    <button class="sidebar-btn new-chat-btn"><i class="fas fa-plus"></i> Chat Baru</button>
+                    <button class="sidebar-btn"><i class="fas fa-book"></i> Panduan</button>
+                    <button class="sidebar-btn"><i class="fas fa-robot"></i> Profil AI</button>
+                </div>
+                <div class="sidebar-history">
+                    <h4>History Chat</h4>
+                    <ul id="chatHistoryList" class="history-list">
+                        <li><i class="far fa-message"></i> Obrolan hari ini</li>
+                    </ul>
                 </div>
             </div>
-            <footer class="chat-input-area">
-                <div class="input-wrapper">
-                    <textarea id="chatInput" placeholder="Ketik pesan..." rows="1"></textarea>
-                    <button id="sendChatBtn" class="send-btn">
-                        <i class="fa-solid fa-paper-plane"></i>
-                    </button>
+
+            <!-- Chat Main Area -->
+            <div class="chat-main">
+                <div class="chat-header">
+                    <button id="toggleSidebar" class="icon-btn"><i class="fas fa-bars"></i></button>
+                    <h2>Aina AI</h2>
+                    <button id="closeChat" class="icon-btn"><i class="fas fa-times"></i></button>
                 </div>
-            </footer>
+                <div id="chat-box" class="chat-box">
+                    <div class="welcome-card">
+                        <div class="icon-circle primary-bg" style="margin:0 auto 10px auto;"><i class="fas fa-robot text-white"></i></div>
+                        <h2>Aina AI - Haid Edition</h2>
+                        <p class="tagline">Tanya apapun tentang siklus haid, kewanitaan, dan kesehatan.</p>
+                    </div>
+                </div>
+                <footer class="chat-input-area">
+                    <div class="input-wrapper">
+                        <textarea id="chatInput" placeholder="Ketik pesan..." rows="1"></textarea>
+                        <button id="sendChatBtn" class="send-btn">
+                            <i class="fa-solid fa-paper-plane"></i>
+                        </button>
+                    </div>
+                </footer>
+            </div>
         </div>
     </div>
 
