@@ -383,6 +383,9 @@ const closeSidebar = document.getElementById('closeSidebar');
 const newChatBtn = document.querySelector('.new-chat-btn');
 const historyList = document.getElementById('chatHistoryList');
 
+toggleSidebar.addEventListener('click', () => chatSidebar.classList.remove('collapsed'));
+closeSidebar.addEventListener('click', () => chatSidebar.classList.add('collapsed'));
+
 let chatHistory = [];
 let savedChats = []; // Array of { id, title, messages }
 let activeChatId = null;
