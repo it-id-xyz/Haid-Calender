@@ -34,18 +34,20 @@
             </section>
 
             <section class="action-menu animate-slide-up">
-                <button class="action-item" onclick="openInput('start')">
+                <div class="action-item" onclick="document.getElementById('startDateInput').showPicker()">
                     <div class="icon-circle primary-bg"><i class="fas fa-play text-white"></i></div>
                     <span>Awal Haid</span>
-                </button>
-                <button class="action-item" onclick="openInput('end')">
+                    <input type="date" id="startDateInput" style="visibility:hidden; position:absolute; width:0; height:0;">
+                </div>
+                <div class="action-item" onclick="document.getElementById('endDateInput').showPicker()">
                     <div class="icon-circle primary-bg"><i class="fas fa-stop text-white"></i></div>
                     <span>Akhir Haid</span>
-                </button>
-                <button class="action-item" onclick="openInput('note')">
-                    <div class="icon-circle primary-bg"><i class="fas fa-pen text-white"></i></div>
-                    <span>Catatan</span>
-                </button>
+                    <input type="date" id="endDateInput" style="visibility:hidden; position:absolute; width:0; height:0;">
+                </div>
+                <div class="action-item" id="openChatBtn">
+                    <div class="icon-circle primary-bg"><i class="fas fa-comments text-white"></i></div>
+                    <span>Chat AI</span>
+                </div>
             </section>
 
             <section class="card ai-card animate-fade-in">
@@ -78,6 +80,29 @@
                 </div>
             </section>
         </main>
+
+        <!-- Chat Modal -->
+        <div id="chatModal" class="chat-modal hidden">
+            <div class="chat-header">
+                <h2>AI Assistant</h2>
+                <button id="closeChat" class="icon-btn"><i class="fas fa-times"></i></button>
+            </div>
+            <div id="chat-box" class="chat-box">
+                <div class="welcome-card">
+                    <div class="icon-circle primary-bg" style="margin:0 auto 10px auto;"><i class="fas fa-robot text-white"></i></div>
+                    <h2>Lita AI - Haid Edition</h2>
+                    <p class="tagline">Tanya apapun tentang siklus haid, kewanitaan, dan kesehatan.</p>
+                </div>
+            </div>
+            <footer class="chat-input-area">
+                <div class="input-wrapper">
+                    <textarea id="chatInput" placeholder="Ketik pesan..." rows="1"></textarea>
+                    <button id="sendChatBtn" class="send-btn">
+                        <i class="fa-solid fa-paper-plane"></i>
+                    </button>
+                </div>
+            </footer>
+        </div>
     </div>
 
     <script type="module" src="script.js"></script>
