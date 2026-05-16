@@ -24,14 +24,22 @@
         </div>
 
         <header class="main-header">
-            <h1>Haid Calender</h1>
+            <div>
+                <h1>Haid Calender</h1>
+                <p id="greetingText" style="font-size: 0.85rem; margin-top: 5px; opacity: 0.9;"></p>
+            </div>
             <div class="header-actions">
                 <button id="themeToggle" class="icon-btn">
                     <i class="fas fa-moon"></i>
                 </button>
                 <div id="userInfo" class="user-profile hidden">
                     <img id="userAvatar" src="" alt="Avatar">
-                    <button id="logoutBtn" class="logout-btn" title="Logout"><i class="fas fa-sign-out-alt"></i></button>
+                    
+                    <!-- Dropdown -->
+                    <div id="userDropdown" class="user-dropdown">
+                        <button id="openProfileBtn" class="dropdown-item"><i class="fas fa-user"></i> Profil</button>
+                        <button id="logoutBtn" class="dropdown-item"><i class="fas fa-sign-out-alt"></i> Logout</button>
+                    </div>
                 </div>
             </div>
         </header>
@@ -141,6 +149,31 @@
                         </button>
                     </div>
                 </footer>
+            </div>
+        </div>
+        
+        <!-- Profile Modal -->
+        <div id="profileModal" class="profile-modal hidden">
+            <div class="profile-card">
+                <button id="closeProfileBtn" class="profile-close"><i class="fas fa-times"></i></button>
+                <h3>Profil Kamu</h3>
+                <div class="form-group">
+                    <label>Nama Panggilan</label>
+                    <input type="text" id="profileName" placeholder="Contoh: Aina">
+                </div>
+                <div class="form-group">
+                    <label>Umur (Tahun)</label>
+                    <input type="number" id="profileAge" placeholder="Contoh: 24">
+                </div>
+                <div class="form-group">
+                    <label>Durasi Haid Normal (Hari)</label>
+                    <input type="number" id="profileDuration" placeholder="Contoh: 5">
+                </div>
+                <div class="form-group">
+                    <label>Keluhan Umum Saat Haid</label>
+                    <input type="text" id="profileCondition" placeholder="Contoh: Kram perut parah, mood swing">
+                </div>
+                <button id="saveProfileBtn" class="save-profile-btn">Simpan Profil</button>
             </div>
         </div>
     </div>
