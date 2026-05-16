@@ -147,7 +147,7 @@ async function updateAIInsight() {
 
     statusEl.innerText = "Status: AI menganalisis siklus Anda...";
 
-    if (!GROQ_API_KEY || GROQ_API_KEY.includes("ISI_API_KEY")) {
+    if (!GROQ_API_KEY || GROQ_API_KEY.includes("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")) {
         statusEl.innerText = "Status: API Key Groq belum diisi. Menampilkan data default.";
         recEl.innerHTML = `
             <div class="rec-item"><i class="fas fa-utensils"></i><span>Makanan: Air kelapa, cokelat hitam</span></div>
@@ -257,7 +257,7 @@ async function sendChatMessage() {
 
     chatHistory.push({ role: "user", content: msg });
 
-    if (!GROQ_API_KEY || GROQ_API_KEY.includes("ISI_API_KEY")) {
+    if (!GROQ_API_KEY || GROQ_API_KEY.includes("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")) {
         document.getElementById('loadingBubble').parentElement.remove();
         chatBox.insertAdjacentHTML('beforeend', `
             <div class="message incoming">
