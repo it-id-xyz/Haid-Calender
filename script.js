@@ -123,12 +123,24 @@ async function loadUserData(email) {
             const data = docSnap.data();
             cycleHistory = data.cycleHistory || [];
             userProfile = data.userProfile || { name: "", age: "", duration: "", condition: "" };
+            // Auto-show walkthrough for users who haven't seen it
+            if (data.hasSeenGuide === false) {
+                setTimeout(() => startWalkthrough(), 1000);
+            }
         } else {
+            // First-time user: create doc with hasSeenGuide: false
             cycleHistory = [];
+            await setDoc(userDocRef, {
+                cycleHistory: [],
+                userProfile: { name: "", age: "", duration: "", condition: "" },
+                hasSeenGuide: false,
+                createdAt: new Date()
+            });
+            setTimeout(() => startWalkthrough(), 1000);
         }
         cycleData = cycleHistory.length > 0 ? cycleHistory[cycleHistory.length - 1] : { start: "", end: "", note: "" };
         updateGreeting();
-    } catch(e) { console.error("Error loading data", e); }
+    } catch (e) { console.error("Error loading data", e); }
 }
 
 async function saveUserData() {
@@ -140,7 +152,7 @@ async function saveUserData() {
             userProfile: userProfile,
             lastUpdated: new Date()
         }, { merge: true });
-    } catch(e) { console.error("Error saving data", e); }
+    } catch (e) { console.error("Error saving data", e); }
 }
 
 function saveCycle(type, val) {
@@ -148,7 +160,7 @@ function saveCycle(type, val) {
     const dateObj = new Date(val);
     const month = dateObj.getMonth();
     const year = dateObj.getFullYear();
-    
+
     let existing = cycleHistory.find(c => {
         if (!c.start && !c.end) return false;
         const refDate = new Date(c.start || c.end);
@@ -164,13 +176,13 @@ function saveCycle(type, val) {
         if (type === 'end') newCycle.end = val;
         cycleHistory.push(newCycle);
     }
-    
+
     cycleHistory.sort((a, b) => {
         const d1 = a.start ? new Date(a.start) : new Date(a.end || 0);
         const d2 = b.start ? new Date(b.start) : new Date(b.end || 0);
         return d1 - d2;
     });
-    
+
     cycleData = cycleHistory[cycleHistory.length - 1];
     saveUserData();
 }
@@ -188,17 +200,17 @@ document.addEventListener('DOMContentLoaded', () => {
 function renderChart() {
     const chart = document.getElementById('cycleChart');
     chart.innerHTML = '';
-    
+
     if (cycleHistory.length === 0 || !cycleHistory[0].start) {
         chart.innerHTML = '<p style="text-align:center; width:100%; color:var(--text-light); font-size: 0.9rem; margin-top: 20px;">Belum ada siklus yang dicatat.</p>';
         return;
     }
 
     const recent = cycleHistory.slice(-7);
-    
+
     recent.forEach((c, index) => {
         if (!c.start) return;
-        
+
         let cycleLength = 0;
         if (index > 0 && recent[index - 1].start) {
             const prevStart = new Date(recent[index - 1].start);
@@ -207,13 +219,13 @@ function renderChart() {
         } else {
             cycleLength = 28;
         }
-        
+
         const m = new Date(c.start).getMonth();
-        let h = Math.min(Math.max(cycleLength, 10), 45); 
-        
+        let h = Math.min(Math.max(cycleLength, 10), 45);
+
         const isActive = (index === recent.length - 1) ? 'active' : '';
         const safeNote = c.note ? c.note.replace(/'/g, "\\'") : 'Tidak ada catatan';
-        
+
         chart.innerHTML += `
             <div class="bar ${isActive}" style="--h: ${h}px" 
                  onclick="window.showChartTooltip('${monthNames[m]}', ${cycleLength}, '${c.start}', '${c.end || '-'}', '${safeNote}')">
@@ -327,7 +339,7 @@ async function updateAIInsight() {
     }
 
     try {
-        let historyText = cycleHistory.map(c => `Bulan ${c.start ? new Date(c.start).getMonth()+1 : '?'}: Mulai ${c.start}, Selesai ${c.end}`).join('; ');
+        let historyText = cycleHistory.map(c => `Bulan ${c.start ? new Date(c.start).getMonth() + 1 : '?'}: Mulai ${c.start}, Selesai ${c.end}`).join('; ');
         const noteContext = cycleData.note ? `. Catatan terakhir bulan ini: ${cycleData.note}.` : "";
         const profileContext = userProfile.name ? ` Nama saya ${userProfile.name}, umur ${userProfile.age} tahun. Durasi haid normal saya ${userProfile.duration} hari. Keluhan umum: ${userProfile.condition}.` : "";
         const personaContext = `Gunakan gaya bicara yang ${aiPersona.tone} dan gaya penulisan yang ${aiPersona.style}.`;
@@ -429,16 +441,16 @@ function renderHistoryList() {
                 </div>
             </div>
         `;
-        
+
         li.onclick = () => switchChat(chat.id);
-        
+
         const dots = li.querySelector('.action-dots');
         dots.onclick = (e) => {
             e.stopPropagation();
             document.querySelectorAll('.delete-popup').forEach(p => p.classList.remove('show'));
             li.querySelector('.delete-popup').classList.add('show');
         };
-        
+
         historyList.appendChild(li);
     });
 }
@@ -503,7 +515,7 @@ newChatBtn.addEventListener('click', () => {
     chatHistory = [];
     activeChatId = null;
     renderHistoryList();
-    if(window.innerWidth <= 768) chatSidebar.classList.add('collapsed');
+    if (window.innerWidth <= 768) chatSidebar.classList.add('collapsed');
 });
 
 chatInput.addEventListener('keydown', function (e) {
@@ -566,7 +578,7 @@ async function sendChatMessage() {
     }
 
     try {
-        let historyText = cycleHistory.map(c => `Bulan ${c.start ? new Date(c.start).getMonth()+1 : '?'}: Mulai ${c.start}, Selesai ${c.end}`).join('; ');
+        let historyText = cycleHistory.map(c => `Bulan ${c.start ? new Date(c.start).getMonth() + 1 : '?'}: Mulai ${c.start}, Selesai ${c.end}`).join('; ');
         const profileContext = userProfile.name ? `Nama User: ${userProfile.name}, Umur: ${userProfile.age}, Durasi Normal: ${userProfile.duration} hari, Keluhan Umum: ${userProfile.condition}.` : "";
         const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
             method: 'POST',
@@ -613,38 +625,77 @@ async function sendChatMessage() {
 const guideBtn = document.getElementById('guideBtn');
 let currentGuideStep = 0;
 const guideSteps = [
-    { 
-        id: 'themeToggle', 
-        title: 'Mode Tema', 
-        text: 'Klik di sini untuk berpindah antara tema Terang dan Gelap sesuai kenyamananmu.' 
+    {
+        id: 'themeToggle',
+        title: 'Mode Tema',
+        text: 'Klik di sini untuk berpindah antara tema Terang dan Gelap sesuai kenyamananmu.'
     },
-    { 
-        id: 'userInfo', 
-        title: 'Profil Kamu', 
-        text: 'Klik foto profilmu untuk melengkapi data diri agar analisis AI lebih akurat.' 
+    {
+        id: 'userInfo',
+        title: 'Profil Kamu',
+        text: 'Klik foto profilmu untuk melengkapi data diri agar analisis AI lebih akurat.'
     },
-    { 
-        id: 'prevMonth', 
-        title: 'Navigasi Kalender', 
-        text: 'Gunakan tombol panah ini untuk melihat riwayat atau rencana siklus di bulan lain.' 
+    {
+        id: 'prevMonth',
+        title: 'Navigasi Kalender',
+        text: 'Gunakan tombol panah ini untuk melihat riwayat atau rencana siklus di bulan lain.'
     },
-    { 
-        id: 'cycleChart', 
-        title: 'Grafik Siklus', 
-        text: 'Pantau keteraturan siklusmu di sini. Klik batangnya untuk melihat detail tiap bulan.' 
+    {
+        id: 'cycleChart',
+        title: 'Grafik Siklus',
+        text: 'Pantau keteraturan siklusmu di sini. Klik batangnya untuk melihat detail tiap bulan.'
     },
-    { 
-        id: 'openChatBtn', 
-        title: 'Tanya Aina AI', 
-        text: 'Punya pertanyaan? Klik tombol chat ini untuk mengobrol langsung dengan asisten AI-mu.' 
+    {
+        id: 'openChatBtn',
+        title: 'Tanya Aina AI',
+        text: 'Punya pertanyaan? Klik tombol chat ini untuk mengobrol langsung dengan asisten AI-mu.'
     }
 ];
 
+// Panduan button → show simple text modal (NOT walkthrough)
 guideBtn.addEventListener('click', () => {
-    chatModal.classList.add('hidden'); // Close chat if open
-    currentGuideStep = 0;
-    startWalkthrough();
+    chatModal.classList.add('hidden');
+    showGuideTextModal();
 });
+
+function showGuideTextModal() {
+    const existing = document.getElementById('guideTextModal');
+    if (existing) existing.remove();
+
+    const modal = document.createElement('div');
+    modal.id = 'guideTextModal';
+    modal.className = 'profile-modal';
+    modal.innerHTML = `
+        <div class="profile-card" style="max-width: 480px; max-height: 85vh; overflow-y: auto;">
+            <button onclick="document.getElementById('guideTextModal').remove()" class="profile-close"><i class="fas fa-times"></i></button>
+            <h3 style="color: var(--primary); margin-bottom: 18px;">📖 Panduan Haid Calendar</h3>
+            <div style="display: flex; flex-direction: column; gap: 14px;">
+                <div style="background: var(--bg-app); padding: 12px; border-radius: 10px;">
+                    <p style="font-weight: 600; margin-bottom: 4px;">🌙 Mode Tema</p>
+                    <p style="font-size: 0.85rem; color: var(--text-light);">Klik ikon bulan/matahari di header untuk berpindah antara tema Terang dan Gelap.</p>
+                </div>
+                <div style="background: var(--bg-app); padding: 12px; border-radius: 10px;">
+                    <p style="font-weight: 600; margin-bottom: 4px;">👤 Profil Kamu</p>
+                    <p style="font-size: 0.85rem; color: var(--text-light);">Klik foto profilmu di pojok kanan atas → Profil untuk melengkapi data (umur, keluhan) agar rekomendasi AI makin akurat.</p>
+                </div>
+                <div style="background: var(--bg-app); padding: 12px; border-radius: 10px;">
+                    <p style="font-weight: 600; margin-bottom: 4px;">📅 Catat Siklus</p>
+                    <p style="font-size: 0.85rem; color: var(--text-light);">Klik tombol Awal Haid & Akhir Haid di bawah kalender untuk mencatat siklus setiap bulan. Data disimpan otomatis ke Firebase.</p>
+                </div>
+                <div style="background: var(--bg-app); padding: 12px; border-radius: 10px;">
+                    <p style="font-weight: 600; margin-bottom: 4px;">📊 Grafik Siklus</p>
+                    <p style="font-size: 0.85rem; color: var(--text-light);">Angka di sumbu kiri (0–45) menunjukkan durasi siklus dalam hari. Klik batang grafik untuk detail bulan tersebut.</p>
+                </div>
+                <div style="background: var(--bg-app); padding: 12px; border-radius: 10px;">
+                    <p style="font-weight: 600; margin-bottom: 4px;">💬 Tanya Aina AI</p>
+                    <p style="font-size: 0.85rem; color: var(--text-light);">Gunakan chat ini untuk diskusi tentang siklus, gejala, dan tips kesehatan reproduksi bersama Aina AI.</p>
+                </div>
+            </div>
+            <button onclick="document.getElementById('guideTextModal').remove()" class="save-profile-btn" style="margin-top: 20px;">Oke, Mengerti!</button>
+        </div>
+    `;
+    document.body.appendChild(modal);
+}
 
 function startWalkthrough() {
     const overlay = document.createElement('div');
@@ -656,7 +707,7 @@ function startWalkthrough() {
 function showStep() {
     const step = guideSteps[currentGuideStep];
     const target = document.getElementById(step.id);
-    
+
     // Remove old tooltip if exists
     const oldTooltip = document.querySelector('.guide-tooltip');
     if (oldTooltip) oldTooltip.remove();
@@ -668,17 +719,17 @@ function showStep() {
 
     const rect = target.getBoundingClientRect();
     const padding = 10;
-    
+
     // Create spotlight effect using clip-path
     const overlay = document.querySelector('.spotlight-overlay');
     const x = rect.left - padding;
     const y = rect.top - padding;
     const w = rect.width + (padding * 2);
     const h = rect.height + (padding * 2);
-    
+
     // Use polygon to punch a hole
     overlay.style.clipPath = `polygon(
-        0% 0%, 0% 100%, ${x}px 100%, ${x}px ${y}px, ${x+w}px ${y}px, ${x+w}px ${y+h}px, ${x}px ${y+h}px, ${x}px 100%, 100% 100%, 100% 0%
+        0% 0%, 0% 100%, ${x}px 100%, ${x}px ${y}px, ${x + w}px ${y}px, ${x + w}px ${y + h}px, ${x}px ${y + h}px, ${x}px 100%, 100% 100%, 100% 0%
     )`;
 
     const tooltip = document.createElement('div');
@@ -695,19 +746,19 @@ function showStep() {
     `;
 
     document.body.appendChild(tooltip);
-    
+
     // Position tooltip
     const tRect = tooltip.getBoundingClientRect();
     let top = y + h + 15;
     let left = x + (w / 2) - (tRect.width / 2);
-    
+
     if (top + tRect.height > window.innerHeight) top = y - tRect.height - 15;
     if (left < 10) left = 10;
     if (left + tRect.width > window.innerWidth - 10) left = window.innerWidth - tRect.width - 10;
-    
+
     tooltip.style.top = `${top}px`;
     tooltip.style.left = `${left}px`;
-    
+
     target.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
@@ -717,11 +768,18 @@ window.nextGuideStep = () => {
     else finishWalkthrough();
 };
 
-window.finishWalkthrough = () => {
+window.finishWalkthrough = async () => {
     const overlay = document.querySelector('.spotlight-overlay');
     const tooltip = document.querySelector('.guide-tooltip');
     if (overlay) overlay.remove();
     if (tooltip) tooltip.remove();
+    // Mark as seen in Firestore
+    if (currentUser) {
+        const userDocRef = doc(db, "users", currentUser.email);
+        try {
+            await setDoc(userDocRef, { hasSeenGuide: true }, { merge: true });
+        } catch (e) { console.error("Error updating guide status", e); }
+    }
 };
 
 // AI Profile Logic
@@ -734,7 +792,7 @@ let aiPersona = {
 
 aiProfileBtn.addEventListener('click', () => {
     const choice = prompt("Pilih gaya bicara Aina AI:\n1. Ramah & Suportif (Default)\n2. Profesional & Medis\n3. Santai & Seperti Teman\n\nKetik angkanya saja:");
-    
+
     if (choice === '1') {
         aiPersona.tone = 'ramah dan suportif';
         aiPersona.style = 'informatif';
@@ -745,13 +803,13 @@ aiProfileBtn.addEventListener('click', () => {
         aiPersona.tone = 'santai, menggunakan bahasa gaul yang sopan, dan seperti teman sebaya';
         aiPersona.style = 'akrab dan menyemangati';
     }
-    
+
     if (choice) alert("Profil AI berhasil diperbarui! Aina AI sekarang akan menjawab dengan gaya " + aiPersona.tone);
 });
 
 // Update loadUserData to also load chats
 const originalLoadUserData = loadUserData;
-loadUserData = async function(email) {
+loadUserData = async function (email) {
     await originalLoadUserData(email);
     await loadSavedChats();
 };
