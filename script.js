@@ -627,28 +627,48 @@ let currentGuideStep = 0;
 const guideSteps = [
     {
         id: 'themeToggle',
-        title: 'Mode Tema',
+        title: '🌙 Mode Tema',
         text: 'Klik di sini untuk berpindah antara tema Terang dan Gelap sesuai kenyamananmu.'
     },
     {
         id: 'userInfo',
-        title: 'Profil Kamu',
-        text: 'Klik foto profilmu untuk melengkapi data diri agar analisis AI lebih akurat.'
+        title: '👤 Profil Kamu',
+        text: 'Klik foto profilmu untuk membuka menu. Pilih "Profil" untuk melengkapi data diri agar rekomendasi AI makin akurat.'
     },
     {
-        id: 'prevMonth',
-        title: 'Navigasi Kalender',
-        text: 'Gunakan tombol panah ini untuk melihat riwayat atau rencana siklus di bulan lain.'
+        id: 'calendarNav',
+        title: '📅 Navigasi Kalender',
+        text: 'Gunakan tombol panah kiri (◀) dan kanan (▶) untuk berpindah bulan, dan lihat tanggal haid yang sudah dicatat.'
+    },
+    {
+        id: 'btnAwalHaid',
+        title: '▶ Catat Awal Haid',
+        text: 'Klik tombol ini untuk memilih tanggal pertama haidmu di bulan ini. Data langsung tersimpan ke cloud.'
+    },
+    {
+        id: 'btnAkhirHaid',
+        title: '⏹ Catat Akhir Haid',
+        text: 'Klik tombol ini untuk mencatat tanggal terakhir haidmu. Kalender akan otomatis menandai rentang tanggal tersebut.'
+    },
+    {
+        id: 'btnCatatan',
+        title: '✏️ Catatan Keluhan',
+        text: 'Simpan catatan tentang gejala atau keluhan yang kamu rasakan. Informasi ini digunakan oleh Aina AI untuk memberi saran yang lebih personal.'
+    },
+    {
+        id: 'aiStatus',
+        title: '✨ AI Insight',
+        text: 'Di sini Aina AI menganalisis siklus haidmu dan memberikan rekomendasi makanan & kegiatan yang cocok untuk kondisimu saat ini.'
     },
     {
         id: 'cycleChart',
-        title: 'Grafik Siklus',
-        text: 'Pantau keteraturan siklusmu di sini. Klik batangnya untuk melihat detail tiap bulan.'
+        title: '📊 Grafik Siklus',
+        text: 'Grafik ini menampilkan durasi siklus dari bulan-bulan sebelumnya. Klik batangnya untuk melihat detail lengkap.'
     },
     {
         id: 'openChatBtn',
-        title: 'Tanya Aina AI',
-        text: 'Punya pertanyaan? Klik tombol chat ini untuk mengobrol langsung dengan asisten AI-mu.'
+        title: '💬 Chat AI - Aina',
+        text: 'Punya pertanyaan? Klik di sini untuk berdiskusi langsung dengan Aina AI tentang siklus, gejala, dan tips kesehatan reproduksimu.'
     }
 ];
 
@@ -732,51 +752,54 @@ function showStep() {
     // Remove old tooltip
     document.querySelectorAll('.guide-tooltip').forEach(el => el.remove());
 
-    const rect = target.getBoundingClientRect();
-    const padding = 12;
-
-    const overlay = document.getElementById('spotlightOverlay');
-    if (!overlay) return;
-
-    const x = rect.left - padding;
-    const y = rect.top - padding;
-    const w = rect.width + (padding * 2);
-    const h = rect.height + (padding * 2);
-
-    overlay.style.clipPath = `polygon(
-        0% 0%, 0% 100%, ${x}px 100%, ${x}px ${y}px,
-        ${x + w}px ${y}px, ${x + w}px ${y + h}px,
-        ${x}px ${y + h}px, ${x}px 100%, 100% 100%, 100% 0%
-    )`;
-
-    const tooltip = document.createElement('div');
-    tooltip.className = 'guide-tooltip';
-    tooltip.innerHTML = `
-        <h4>${step.title}</h4>
-        <p>${step.text}</p>
-        <div class="guide-btn-group">
-            <button class="guide-skip" onclick="window.finishWalkthrough()">Lewati</button>
-            <button class="guide-next" onclick="window.nextGuideStep()">
-                ${currentGuideStep === guideSteps.length - 1 ? 'Selesai ✓' : 'Lanjut →'}
-            </button>
-        </div>
-    `;
-    document.body.appendChild(tooltip);
-
-    // Position tooltip below/above target
-    const tRect = tooltip.getBoundingClientRect();
-    let top = y + h + 15;
-    let left = x + (w / 2) - (tRect.width / 2);
-
-    if (top + tRect.height > window.innerHeight - 10) top = y - tRect.height - 15;
-    if (top < 10) top = 10;
-    if (left < 10) left = 10;
-    if (left + tRect.width > window.innerWidth - 10) left = window.innerWidth - tRect.width - 10;
-
-    tooltip.style.top = `${top}px`;
-    tooltip.style.left = `${left}px`;
-
+    // Scroll to target FIRST, then measure position after scroll settles
     target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+    setTimeout(() => {
+        const overlay = document.getElementById('spotlightOverlay');
+        if (!overlay) return; // walkthrough was cancelled mid-step
+
+        const rect = target.getBoundingClientRect();
+        const padding = 12;
+
+        const x = Math.max(0, rect.left - padding);
+        const y = Math.max(0, rect.top - padding);
+        const w = rect.width + (padding * 2);
+        const h = rect.height + (padding * 2);
+
+        overlay.style.clipPath = `polygon(
+            0% 0%, 0% 100%, ${x}px 100%, ${x}px ${y}px,
+            ${x + w}px ${y}px, ${x + w}px ${y + h}px,
+            ${x}px ${y + h}px, ${x}px 100%, 100% 100%, 100% 0%
+        )`;
+
+        const tooltip = document.createElement('div');
+        tooltip.className = 'guide-tooltip';
+        tooltip.innerHTML = `
+            <h4>${step.title}</h4>
+            <p>${step.text}</p>
+            <div class="guide-btn-group">
+                <button class="guide-skip" onclick="window.finishWalkthrough()">Lewati</button>
+                <button class="guide-next" onclick="window.nextGuideStep()">
+                    ${currentGuideStep === guideSteps.length - 1 ? 'Selesai ✓' : 'Lanjut →'}
+                </button>
+            </div>
+        `;
+        document.body.appendChild(tooltip);
+
+        // Position tooltip below/above target, clamped to viewport
+        const tRect = tooltip.getBoundingClientRect();
+        let top = y + h + 15;
+        let left = x + (w / 2) - (tRect.width / 2);
+
+        if (top + tRect.height > window.innerHeight - 10) top = y - tRect.height - 15;
+        if (top < 10) top = 10;
+        if (left < 10) left = 10;
+        if (left + tRect.width > window.innerWidth - 10) left = window.innerWidth - tRect.width - 10;
+
+        tooltip.style.top = `${top}px`;
+        tooltip.style.left = `${left}px`;
+    }, 400); // Wait 400ms for smooth scroll to finish
 }
 
 window.nextGuideStep = () => {
