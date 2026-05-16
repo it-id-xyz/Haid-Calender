@@ -698,38 +698,55 @@ function showGuideTextModal() {
 }
 
 function startWalkthrough() {
+    // Remove any existing overlay first to avoid stacking
+    document.querySelectorAll('.spotlight-overlay').forEach(el => el.remove());
+    document.querySelectorAll('.guide-tooltip').forEach(el => el.remove());
+    currentGuideStep = 0;
     const overlay = document.createElement('div');
+    overlay.id = 'spotlightOverlay';
     overlay.className = 'spotlight-overlay';
+    // Start with clip-path = none so nothing is hidden until showStep runs
+    overlay.style.clipPath = 'none';
     document.body.appendChild(overlay);
-    showStep();
+    // Small delay so the element is mounted in DOM before we measure positions
+    setTimeout(showStep, 50);
 }
 
 function showStep() {
-    const step = guideSteps[currentGuideStep];
-    const target = document.getElementById(step.id);
+    // Skip steps whose target element doesn't exist, find the next valid one
+    while (currentGuideStep < guideSteps.length) {
+        const step = guideSteps[currentGuideStep];
+        const target = document.getElementById(step.id);
+        if (target) break; // Found a valid target
+        currentGuideStep++;
+    }
 
-    // Remove old tooltip if exists
-    const oldTooltip = document.querySelector('.guide-tooltip');
-    if (oldTooltip) oldTooltip.remove();
-
-    if (!target) {
+    if (currentGuideStep >= guideSteps.length) {
         finishWalkthrough();
         return;
     }
 
-    const rect = target.getBoundingClientRect();
-    const padding = 10;
+    const step = guideSteps[currentGuideStep];
+    const target = document.getElementById(step.id);
 
-    // Create spotlight effect using clip-path
-    const overlay = document.querySelector('.spotlight-overlay');
+    // Remove old tooltip
+    document.querySelectorAll('.guide-tooltip').forEach(el => el.remove());
+
+    const rect = target.getBoundingClientRect();
+    const padding = 12;
+
+    const overlay = document.getElementById('spotlightOverlay');
+    if (!overlay) return;
+
     const x = rect.left - padding;
     const y = rect.top - padding;
     const w = rect.width + (padding * 2);
     const h = rect.height + (padding * 2);
 
-    // Use polygon to punch a hole
     overlay.style.clipPath = `polygon(
-        0% 0%, 0% 100%, ${x}px 100%, ${x}px ${y}px, ${x + w}px ${y}px, ${x + w}px ${y + h}px, ${x}px ${y + h}px, ${x}px 100%, 100% 100%, 100% 0%
+        0% 0%, 0% 100%, ${x}px 100%, ${x}px ${y}px,
+        ${x + w}px ${y}px, ${x + w}px ${y + h}px,
+        ${x}px ${y + h}px, ${x}px 100%, 100% 100%, 100% 0%
     )`;
 
     const tooltip = document.createElement('div');
@@ -738,21 +755,21 @@ function showStep() {
         <h4>${step.title}</h4>
         <p>${step.text}</p>
         <div class="guide-btn-group">
-            <button class="guide-skip" onclick="finishWalkthrough()">Lewati</button>
-            <button class="guide-next" onclick="nextGuideStep()">
-                ${currentGuideStep === guideSteps.length - 1 ? 'Selesai' : 'Lanjut'}
+            <button class="guide-skip" onclick="window.finishWalkthrough()">Lewati</button>
+            <button class="guide-next" onclick="window.nextGuideStep()">
+                ${currentGuideStep === guideSteps.length - 1 ? 'Selesai ✓' : 'Lanjut →'}
             </button>
         </div>
     `;
-
     document.body.appendChild(tooltip);
 
-    // Position tooltip
+    // Position tooltip below/above target
     const tRect = tooltip.getBoundingClientRect();
     let top = y + h + 15;
     let left = x + (w / 2) - (tRect.width / 2);
 
-    if (top + tRect.height > window.innerHeight) top = y - tRect.height - 15;
+    if (top + tRect.height > window.innerHeight - 10) top = y - tRect.height - 15;
+    if (top < 10) top = 10;
     if (left < 10) left = 10;
     if (left + tRect.width > window.innerWidth - 10) left = window.innerWidth - tRect.width - 10;
 
@@ -769,10 +786,9 @@ window.nextGuideStep = () => {
 };
 
 window.finishWalkthrough = async () => {
-    const overlay = document.querySelector('.spotlight-overlay');
-    const tooltip = document.querySelector('.guide-tooltip');
-    if (overlay) overlay.remove();
-    if (tooltip) tooltip.remove();
+    // Remove ALL overlay and tooltip elements completely
+    document.querySelectorAll('.spotlight-overlay, #spotlightOverlay').forEach(el => el.remove());
+    document.querySelectorAll('.guide-tooltip').forEach(el => el.remove());
     // Mark as seen in Firestore
     if (currentUser) {
         const userDocRef = doc(db, "users", currentUser.email);
