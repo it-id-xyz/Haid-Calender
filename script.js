@@ -1,6 +1,7 @@
 // Import Firebase SDK (Setup placeholder)
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 const firebaseConfig = {
     apiKey: "AIzaSyDnbgqXr1K13W1MYwNlO83vmgyL3K4-aPw",
@@ -14,6 +15,8 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+const auth = getAuth(app);
+const provider = new GoogleAuthProvider();
 
 // GROQ API KEY
 const GROQ_API_KEY = "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";
@@ -26,12 +29,100 @@ themeToggle.addEventListener('click', () => {
     themeToggle.innerHTML = isDark ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
 });
 
-// Data Mockup
-let cycleData = {
-    start: "2024-05-05",
-    end: "2024-05-10",
-    note: ""
-};
+// User & Data System
+let currentUser = null;
+let cycleHistory = [];
+let cycleData = { start: "", end: "", note: "" };
+
+const loginOverlay = document.getElementById('loginOverlay');
+const loginGoogleBtn = document.getElementById('loginGoogleBtn');
+const userInfo = document.getElementById('userInfo');
+const userAvatar = document.getElementById('userAvatar');
+const logoutBtn = document.getElementById('logoutBtn');
+
+onAuthStateChanged(auth, async (user) => {
+    if (user) {
+        currentUser = user;
+        loginOverlay.classList.add('hidden');
+        userInfo.classList.remove('hidden');
+        userAvatar.src = user.photoURL || 'https://via.placeholder.com/35';
+        await loadUserData(user.email);
+        initCalendar();
+        updateAIInsight();
+        renderChart();
+    } else {
+        currentUser = null;
+        loginOverlay.classList.remove('hidden');
+        userInfo.classList.add('hidden');
+        cycleHistory = [];
+        cycleData = { start: "", end: "", note: "" };
+        initCalendar();
+    }
+});
+
+loginGoogleBtn.addEventListener('click', () => {
+    signInWithPopup(auth, provider).catch(error => console.error("Login Error", error));
+});
+
+logoutBtn.addEventListener('click', () => {
+    signOut(auth);
+});
+
+async function loadUserData(email) {
+    const userDocRef = doc(db, "users", email);
+    try {
+        const docSnap = await getDoc(userDocRef);
+        if (docSnap.exists()) {
+            cycleHistory = docSnap.data().cycleHistory || [];
+        } else {
+            cycleHistory = [];
+        }
+        cycleData = cycleHistory.length > 0 ? cycleHistory[cycleHistory.length - 1] : { start: "", end: "", note: "" };
+    } catch(e) { console.error("Error loading data", e); }
+}
+
+async function saveUserData() {
+    if (!currentUser) return;
+    const userDocRef = doc(db, "users", currentUser.email);
+    try {
+        await setDoc(userDocRef, {
+            cycleHistory: cycleHistory,
+            lastUpdated: new Date()
+        }, { merge: true });
+    } catch(e) { console.error("Error saving data", e); }
+}
+
+function saveCycle(type, val) {
+    if (!val) return;
+    const dateObj = new Date(val);
+    const month = dateObj.getMonth();
+    const year = dateObj.getFullYear();
+    
+    let existing = cycleHistory.find(c => {
+        if (!c.start && !c.end) return false;
+        const refDate = new Date(c.start || c.end);
+        return refDate.getMonth() === month && refDate.getFullYear() === year;
+    });
+
+    if (existing) {
+        if (type === 'start') existing.start = val;
+        if (type === 'end') existing.end = val;
+    } else {
+        let newCycle = { start: "", end: "", note: "" };
+        if (type === 'start') newCycle.start = val;
+        if (type === 'end') newCycle.end = val;
+        cycleHistory.push(newCycle);
+    }
+    
+    cycleHistory.sort((a, b) => {
+        const d1 = a.start ? new Date(a.start) : new Date(a.end || 0);
+        const d2 = b.start ? new Date(b.start) : new Date(b.end || 0);
+        return d1 - d2;
+    });
+    
+    cycleData = cycleHistory[cycleHistory.length - 1];
+    saveUserData();
+}
 
 const monthNames = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
 let currentDateObj = new Date();
@@ -40,29 +131,38 @@ let currentYear = currentDateObj.getFullYear();
 
 // Initialization
 document.addEventListener('DOMContentLoaded', () => {
-    initCalendar();
-    updateAIInsight();
-    renderChart();
+    // Dipanggil saat auth state berubah
 });
 
 function renderChart() {
     const chart = document.getElementById('cycleChart');
     chart.innerHTML = '';
-    if (!cycleData.start || !cycleData.end) {
+    
+    if (cycleHistory.length === 0 || !cycleHistory[0].start) {
         chart.innerHTML = '<p style="text-align:center; width:100%; color:var(--text-light); font-size: 0.9rem; margin-top: 20px;">Belum ada siklus yang dicatat.</p>';
         return;
     }
 
-    // Create a dynamic chart based on current month
-    const currentM = new Date(cycleData.start).getMonth();
-    for (let i = 4; i >= 0; i--) {
-        let m = currentM - i;
-        if (m < 0) m += 12;
-        // Simulate previous cycles based on random height, except current one
-        const h = i === 0 ? 28 : Math.floor(Math.random() * 10) + 25;
-        const isActive = i === 0 ? 'active' : '';
-        chart.innerHTML += `<div class="bar ${isActive}" style="--h: ${h}px" data-label="${monthNames[m].substring(0, 3)}"></div>`;
-    }
+    const recent = cycleHistory.slice(-7);
+    
+    recent.forEach((c, index) => {
+        if (!c.start) return;
+        
+        let cycleLength = 0;
+        if (index > 0 && recent[index - 1].start) {
+            const prevStart = new Date(recent[index - 1].start);
+            const currStart = new Date(c.start);
+            cycleLength = Math.round((currStart - prevStart) / (1000 * 60 * 60 * 24));
+        } else {
+            cycleLength = 28;
+        }
+        
+        const m = new Date(c.start).getMonth();
+        let h = Math.min(Math.max(cycleLength, 10), 45); 
+        
+        const isActive = (index === recent.length - 1) ? 'active' : '';
+        chart.innerHTML += `<div class="bar ${isActive}" style="--h: ${h}px" data-label="${monthNames[m].substring(0, 3)}\n${cycleLength}h"></div>`;
+    });
 }
 
 function initCalendar() {
@@ -87,9 +187,9 @@ function initCalendar() {
             const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
             let classes = 'day';
 
-            if (dateStr === cycleData.start) classes += ' range-start';
-            else if (dateStr === cycleData.end) classes += ' range-end';
-            else if (cycleData.start && cycleData.end && dateStr > cycleData.start && dateStr < cycleData.end) classes += ' in-range';
+            if (cycleHistory.some(c => c.start === dateStr)) classes += ' range-start';
+            else if (cycleHistory.some(c => c.end === dateStr)) classes += ' range-end';
+            else if (cycleHistory.some(c => c.start && c.end && dateStr > c.start && dateStr < c.end)) classes += ' in-range';
 
             grid.innerHTML += `<div class="${classes}" onclick="selectDate('${dateStr}')">${day}</div>`;
         }
@@ -119,20 +219,21 @@ window.openCatatan = () => {
     const note = prompt("Masukkan catatan (contoh: Kram perut, mood swing, dll):", cycleData.note || "");
     if (note !== null) {
         cycleData.note = note;
+        saveUserData();
         updateAIInsight();
     }
 };
 
 // Date inputs logic
 document.getElementById('startDateInput').addEventListener('change', (e) => {
-    cycleData.start = e.target.value;
+    saveCycle('start', e.target.value);
     initCalendar();
     updateAIInsight();
     renderChart();
 });
 
 document.getElementById('endDateInput').addEventListener('change', (e) => {
-    cycleData.end = e.target.value;
+    saveCycle('end', e.target.value);
     initCalendar();
     updateAIInsight();
     renderChart();
@@ -143,7 +244,7 @@ async function updateAIInsight() {
     const statusEl = document.getElementById('aiStatus');
     const recEl = document.querySelector('.recommendation-grid');
 
-    if (!cycleData.start || !cycleData.end) return;
+    if (cycleHistory.length === 0 || !cycleHistory[0].start) return;
 
     statusEl.innerText = "Status: AI menganalisis siklus Anda...";
 
@@ -157,8 +258,9 @@ async function updateAIInsight() {
     }
 
     try {
-        const noteContext = cycleData.note ? `. Catatan tambahan saya: ${cycleData.note}.` : "";
-        const prompt = `Siklus haid saya mulai tanggal ${cycleData.start} dan berakhir ${cycleData.end}. Hari ini tanggal ${new Date().toISOString().split('T')[0]}${noteContext} Berikan analisis singkat status saya dan 2 rekomendasi (1 makanan dan minuman, 1 kegiatan) dalam format JSON: {"status": "string", "makanan dan minuman": "string", "kegiatan": "string"}. Ingat, kembalikan HANYA JSON murni tanpa markdown, tanpa kalimat tambahan.`;
+        let historyText = cycleHistory.map(c => `Bulan ${c.start ? new Date(c.start).getMonth()+1 : '?'}: Mulai ${c.start}, Selesai ${c.end}`).join('; ');
+        const noteContext = cycleData.note ? `. Catatan terakhir bulan ini: ${cycleData.note}.` : "";
+        const prompt = `Riwayat haid saya beberapa bulan terakhir: ${historyText}. Hari ini tanggal ${new Date().toISOString().split('T')[0]}${noteContext} Berikan analisis singkat status saya dan 2 rekomendasi (1 makanan dan minuman, 1 kegiatan) dalam format JSON: {"status": "string", "makanan dan minuman": "string", "kegiatan": "string"}. Ingat, kembalikan HANYA JSON murni tanpa markdown, tanpa kalimat tambahan.`;
 
         const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
             method: "POST",
@@ -268,6 +370,7 @@ async function sendChatMessage() {
     }
 
     try {
+        let historyText = cycleHistory.map(c => `Bulan ${c.start ? new Date(c.start).getMonth()+1 : '?'}: Mulai ${c.start}, Selesai ${c.end}`).join('; ');
         const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
             method: 'POST',
             headers: {
@@ -277,7 +380,7 @@ async function sendChatMessage() {
             body: JSON.stringify({
                 model: 'llama-3.3-70b-versatile',
                 messages: [
-                    { role: "system", content: `Kamu adalah Aina AI, asisten spesialis kesehatan reproduksi wanita. User saat ini sedang mencatat siklus haid dari ${cycleData.start} s/d ${cycleData.end}. Catatan keluhan: ${cycleData.note || 'tidak ada'}. Jawab dengan ramah, suportif, informatif, dan ringkas menggunakan bahasa Indonesia.` },
+                    { role: "system", content: `Kamu adalah Aina AI, asisten spesialis kesehatan reproduksi wanita. User memiliki riwayat haid: ${historyText}. Catatan keluhan bulan ini: ${cycleData.note || 'tidak ada'}. Jawab dengan ramah, suportif, informatif, dan ringkas menggunakan bahasa Indonesia.` },
                     ...chatHistory.slice(-5) // Send last 5 messages for context
                 ]
             })
