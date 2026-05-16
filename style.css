@@ -630,3 +630,121 @@ body {
     cursor: pointer;
     padding: 5px;
 }
+
+/* User Dropdown Menu */
+.user-dropdown {
+    position: absolute;
+    top: 60px;
+    right: 20px;
+    background: var(--card-bg);
+    border-radius: 12px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    width: 150px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    z-index: 100;
+    transition: all 0.2s ease;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(-10px);
+}
+
+.user-dropdown.active {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0);
+}
+
+.dropdown-item {
+    padding: 12px 15px;
+    background: none;
+    border: none;
+    color: var(--text-dark);
+    text-align: left;
+    cursor: pointer;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: background 0.2s;
+}
+
+.dropdown-item:hover {
+    background: var(--secondary);
+    color: var(--primary);
+}
+
+/* Profile Modal */
+.profile-modal {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.5);
+    z-index: 3000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: opacity 0.3s;
+}
+
+.profile-modal.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.profile-card {
+    background: var(--card-bg);
+    padding: 25px;
+    border-radius: 20px;
+    width: 90%;
+    max-width: 400px;
+    position: relative;
+}
+
+.profile-card h3 {
+    color: var(--primary);
+    margin-bottom: 20px;
+}
+
+.profile-close {
+    position: absolute;
+    top: 20px; right: 20px;
+    background: none; border: none;
+    font-size: 1.2rem; color: var(--text-light);
+    cursor: pointer;
+}
+
+.form-group {
+    margin-bottom: 15px;
+    text-align: left;
+}
+
+.form-group label {
+    display: block;
+    font-size: 0.85rem;
+    color: var(--text-light);
+    margin-bottom: 5px;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--bg-app);
+    color: var(--text-dark);
+}
+
+.save-profile-btn {
+    width: 100%;
+    padding: 12px;
+    background: var(--primary);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 10px;
+    transition: background 0.2s;
+}
+.save-profile-btn:hover { background: #ff4d6d; }
