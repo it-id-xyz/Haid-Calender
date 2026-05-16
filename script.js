@@ -305,10 +305,36 @@ const chatBox = document.getElementById('chat-box');
 const chatInput = document.getElementById('chatInput');
 const sendChatBtn = document.getElementById('sendChatBtn');
 
+// Sidebar Logic
+const chatSidebar = document.getElementById('chatSidebar');
+const toggleSidebar = document.getElementById('toggleSidebar');
+const closeSidebar = document.getElementById('closeSidebar');
+const newChatBtn = document.querySelector('.new-chat-btn');
+
+toggleSidebar.addEventListener('click', () => chatSidebar.classList.remove('collapsed'));
+closeSidebar.addEventListener('click', () => chatSidebar.classList.add('collapsed'));
+
 let chatHistory = [];
 
-openChatBtn.addEventListener('click', () => chatModal.classList.remove('hidden'));
+openChatBtn.addEventListener('click', () => {
+    chatModal.classList.remove('hidden');
+    // Tampilkan sidebar secara default di desktop, sembunyikan di mobile
+    if (window.innerWidth <= 768) chatSidebar.classList.add('collapsed');
+    else chatSidebar.classList.remove('collapsed');
+});
 closeChat.addEventListener('click', () => chatModal.classList.add('hidden'));
+
+newChatBtn.addEventListener('click', () => {
+    chatBox.innerHTML = `
+        <div class="welcome-card">
+            <div class="icon-circle primary-bg" style="margin:0 auto 10px auto;"><i class="fas fa-robot text-white"></i></div>
+            <h2>Aina AI - Haid Edition</h2>
+            <p class="tagline">Tanya apapun tentang siklus haid, kewanitaan, dan kesehatan.</p>
+        </div>
+    `;
+    chatHistory = [];
+    if(window.innerWidth <= 768) chatSidebar.classList.add('collapsed');
+});
 
 chatInput.addEventListener('keydown', function (e) {
     if (e.key === 'Enter' && !e.shiftKey) {
