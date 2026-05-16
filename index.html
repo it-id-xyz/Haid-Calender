@@ -46,7 +46,7 @@
 
         <main class="dashboard">
             <section class="card calendar-section animate-fade-in">
-                <div class="calendar-header">
+                <div class="calendar-header" id="calendarNav">
                     <button id="prevMonth"><i class="fas fa-chevron-left"></i></button>
                     <h2 id="monthDisplay">Mei 2024</h2>
                     <button id="nextMonth"><i class="fas fa-chevron-right"></i></button>
@@ -58,18 +58,18 @@
                 </div>
             </section>
 
-            <section class="action-menu animate-slide-up">
-                <div class="action-item" onclick="document.getElementById('startDateInput').showPicker()">
+            <section class="action-menu animate-slide-up" id="actionMenu">
+                <div id="btnAwalHaid" class="action-item" onclick="document.getElementById('startDateInput').showPicker()">
                     <div class="icon-circle primary-bg"><i class="fas fa-play text-white"></i></div>
                     <span>Awal Haid</span>
                     <input type="date" id="startDateInput" style="visibility:hidden; position:absolute; width:0; height:0;">
                 </div>
-                <div class="action-item" onclick="document.getElementById('endDateInput').showPicker()">
+                <div id="btnAkhirHaid" class="action-item" onclick="document.getElementById('endDateInput').showPicker()">
                     <div class="icon-circle primary-bg"><i class="fas fa-stop text-white"></i></div>
                     <span>Akhir Haid</span>
                     <input type="date" id="endDateInput" style="visibility:hidden; position:absolute; width:0; height:0;">
                 </div>
-                <div class="action-item" onclick="openCatatan()">
+                <div id="btnCatatan" class="action-item" onclick="openCatatan()">
                     <div class="icon-circle primary-bg"><i class="fas fa-pen text-white"></i></div>
                     <span>Catatan</span>
                 </div>
