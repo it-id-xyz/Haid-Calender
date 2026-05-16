@@ -212,9 +212,27 @@ function renderChart() {
         let h = Math.min(Math.max(cycleLength, 10), 45); 
         
         const isActive = (index === recent.length - 1) ? 'active' : '';
-        chart.innerHTML += `<div class="bar ${isActive}" style="--h: ${h}px" data-label="${monthNames[m].substring(0, 3)}\n${cycleLength}h"></div>`;
+        const safeNote = c.note ? c.note.replace(/'/g, "\\'") : 'Tidak ada catatan';
+        
+        chart.innerHTML += `
+            <div class="bar ${isActive}" style="--h: ${h}px" 
+                 onclick="window.showChartTooltip('${monthNames[m]}', ${cycleLength}, '${c.start}', '${c.end || '-'}', '${safeNote}')">
+                <span class="bar-label">${monthNames[m].substring(0, 3)}<br>${cycleLength}h</span>
+            </div>`;
     });
 }
+
+window.showChartTooltip = (month, length, start, end, note) => {
+    document.getElementById('ttMonth').innerText = `Bulan ${month}`;
+    document.getElementById('ttLength').innerText = length;
+    document.getElementById('ttRange').innerText = `${start} s/d ${end}`;
+    document.getElementById('ttNote').innerText = note;
+    document.getElementById('chartTooltip').classList.remove('hidden');
+};
+
+window.closeChartTooltip = () => {
+    document.getElementById('chartTooltip').classList.add('hidden');
+};
 
 function initCalendar() {
     const grid = document.getElementById('calendarGrid');
