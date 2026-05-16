@@ -230,13 +230,46 @@ body {
     background: var(--primary);
 }
 
-.bar::after {
-    content: attr(data-label);
+.bar-label {
     position: absolute;
-    bottom: -25px;
+    bottom: -35px;
     left: 50%;
     transform: translateX(-50%);
-    font-size: 0.7rem;
+    font-size: 0.75rem;
+    text-align: center;
+    color: var(--text-dark);
+    line-height: 1.2;
+}
+
+.chart-tooltip {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    border-radius: 12px;
+    padding: 15px;
+    width: 200px;
+    z-index: 100;
+    transition: opacity 0.3s;
+}
+
+.chart-tooltip.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.tooltip-close {
+    position: absolute;
+    top: 5px;
+    right: 10px;
+    background: none;
+    border: none;
+    font-size: 1.2rem;
+    cursor: pointer;
+    color: var(--text-light);
 }
 
 /* Animations */
