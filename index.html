@@ -98,9 +98,19 @@
                 </div>
             </section>
 
-            <section class="card chart-section animate-fade-in">
+            <section class="card chart-section animate-fade-in" style="position: relative;">
                 <h3>Grafik Siklus</h3>
+                <p style="font-size: 0.75rem; color: var(--text-light); margin-bottom: 15px;">Klik batang grafik untuk melihat detail siklus di bulan tersebut.</p>
                 <div class="chart-container" id="cycleChart">
+                </div>
+                
+                <!-- Chart Tooltip -->
+                <div id="chartTooltip" class="chart-tooltip hidden">
+                    <button class="tooltip-close" onclick="closeChartTooltip()">&times;</button>
+                    <h4 id="ttMonth" style="color: var(--primary); margin-bottom: 8px;">Bulan</h4>
+                    <p style="font-size: 0.8rem; margin-bottom: 5px;"><strong>Siklus:</strong> <span id="ttLength"></span> hari</p>
+                    <p style="font-size: 0.8rem; margin-bottom: 5px;"><strong>Rentang:</strong> <span id="ttRange"></span></p>
+                    <p style="font-size: 0.8rem;"><strong>Catatan:</strong> <span id="ttNote"></span></p>
                 </div>
             </section>
         </main>
