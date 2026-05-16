@@ -133,6 +133,38 @@ body {
     border-radius: 0 50% 50% 0 !important;
 }
 
+/* Ongoing period - haid belum ada tanggal akhir */
+.day.ongoing {
+    background: rgba(216, 27, 96, 0.15);
+    color: var(--primary);
+    border-radius: 0;
+}
+
+.day.range-start.ongoing {
+    background: var(--primary) !important;
+    color: white !important;
+    border-radius: 50% 0 0 50% !important;
+    position: relative;
+}
+
+.day.range-start.ongoing::after {
+    content: '';
+    position: absolute;
+    bottom: 4px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: white;
+    animation: pulse-dot 1.2s ease-in-out infinite;
+}
+
+@keyframes pulse-dot {
+    0%, 100% { opacity: 1; transform: translateX(-50%) scale(1); }
+    50% { opacity: 0.3; transform: translateX(-50%) scale(1.6); }
+}
+
 /* Action Menu */
 .action-menu {
     display: flex;
