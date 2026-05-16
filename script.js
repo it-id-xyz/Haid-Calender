@@ -109,7 +109,7 @@ async function updateAIInsight() {
 
     statusEl.innerText = "Status: AI menganalisis siklus Anda...";
 
-    if(GROQ_API_KEY === "ISI_API_KEY_GROQ_ANDA_DISINI") {
+    if (GROQ_API_KEY === "ISI_API_KEY_GROQ_ANDA_DISINI") {
         statusEl.innerText = "Status: API Key Groq belum diisi. Menampilkan data default.";
         recEl.innerHTML = `
             <div class="rec-item"><i class="fas fa-utensils"></i><span>Makanan: Air kelapa, cokelat hitam</span></div>
@@ -119,8 +119,8 @@ async function updateAIInsight() {
     }
 
     try {
-        const prompt = `Siklus haid saya mulai tanggal ${cycleData.start} dan berakhir ${cycleData.end}. Hari ini tanggal ${new Date().toISOString().split('T')[0]}. Berikan analisis singkat status saya dan 2 rekomendasi (1 makanan, 1 kegiatan) dalam format JSON: {"status": "string singkat", "makanan": "string", "kegiatan": "string"}`;
-        
+        const prompt = `Siklus haid saya mulai tanggal ${cycleData.start} dan berakhir ${cycleData.end}. Hari ini tanggal ${new Date().toISOString().split('T')[0]}. Berikan analisis singkat status saya dan 2 rekomendasi (1 makanan dan minuman, 1 kegiatan) dalam format JSON: {"status": "string", "makanan dan minuman": "string", "kegiatan": "string"}. Ingat, kembalikan HANYA JSON murni tanpa markdown, tanpa kalimat tambahan.`;
+
         const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
             method: "POST",
             headers: {
@@ -128,15 +128,23 @@ async function updateAIInsight() {
                 "Authorization": `Bearer ${GROQ_API_KEY}`
             },
             body: JSON.stringify({
-                model: "llama3-8b-8192",
-                messages: [{ role: "user", content: prompt }],
-                response_format: { type: "json_object" }
+                model: "llama-3.3-70b-versatile",
+                messages: [{ role: "user", content: prompt }]
             })
         });
-        
+
         const data = await response.json();
-        const result = JSON.parse(data.choices[0].message.content);
-        
+        if (!response.ok) throw new Error(data.error?.message || "Network response was not ok");
+
+        let content = data.choices[0].message.content.trim();
+        const firstBrace = content.indexOf('{');
+        const lastBrace = content.lastIndexOf('}');
+        if (firstBrace !== -1 && lastBrace !== -1) {
+            content = content.substring(firstBrace, lastBrace + 1);
+        }
+
+        const result = JSON.parse(content);
+
         statusEl.innerText = `Status: ${result.status}`;
         recEl.innerHTML = `
             <div class="rec-item"><i class="fas fa-utensils"></i><span>Makanan: ${result.makanan}</span></div>
@@ -160,7 +168,7 @@ let chatHistory = [];
 openChatBtn.addEventListener('click', () => chatModal.classList.remove('hidden'));
 closeChat.addEventListener('click', () => chatModal.classList.add('hidden'));
 
-chatInput.addEventListener('keydown', function(e) {
+chatInput.addEventListener('keydown', function (e) {
     if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
         sendChatMessage();
@@ -168,8 +176,8 @@ chatInput.addEventListener('keydown', function(e) {
     }
 });
 
-chatInput.addEventListener('input', function() {
-    this.style.height = 'auto'; 
+chatInput.addEventListener('input', function () {
+    this.style.height = 'auto';
     this.style.height = Math.min(this.scrollHeight, 100) + 'px';
 });
 
@@ -192,9 +200,9 @@ async function sendChatMessage() {
             <div class="bubble">${msg}<span class="time">${timeStr}</span></div>
         </div>
     `);
-    
+
     chatInput.value = '';
-    
+
     // Append AI Loading
     chatBox.insertAdjacentHTML('beforeend', `
         <div class="message incoming">
@@ -209,7 +217,7 @@ async function sendChatMessage() {
 
     chatHistory.push({ role: "user", content: msg });
 
-    if(GROQ_API_KEY === "ISI_API_KEY_GROQ_ANDA_DISINI") {
+    if (GROQ_API_KEY === "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") {
         document.getElementById('loadingBubble').parentElement.remove();
         chatBox.insertAdjacentHTML('beforeend', `
             <div class="message incoming">
@@ -227,9 +235,9 @@ async function sendChatMessage() {
                 'Authorization': `Bearer ${GROQ_API_KEY}`
             },
             body: JSON.stringify({
-                model: 'llama3-70b-8192',
+                model: 'llama-3.3-70b-versatile',
                 messages: [
-                    { role: "system", content: "Kamu adalah Lita AI, asisten spesialis kesehatan reproduksi wanita, kewanitaan, dan siklus haid. Jawab dengan ramah, suportif, informatif, dan ringkas menggunakan bahasa Indonesia yang baik." },
+                    { role: "system", content: "Kamu adalah Aina AI, asisten spesialis kesehatan reproduksi wanita, kewanitaan, dan siklus haid. Jawab dengan ramah, suportif, informatif, dan ringkas menggunakan bahasa Indonesia yang baik." },
                     ...chatHistory.slice(-5) // Send last 5 messages for context
                 ]
             })
@@ -237,7 +245,7 @@ async function sendChatMessage() {
 
         const data = await response.json();
         const jawaban = data.choices[0].message.content;
-        
+
         chatHistory.push({ role: "assistant", content: jawaban });
 
         // Remove loading bubble
@@ -249,7 +257,7 @@ async function sendChatMessage() {
                 <div class="bubble">${jawaban.replace(/\n/g, '<br>')}<span class="time">${timeStr}</span></div>
             </div>
         `);
-        
+
         chatBox.scrollTop = chatBox.scrollHeight;
     } catch (error) {
         document.getElementById('loadingBubble').parentElement.remove();
