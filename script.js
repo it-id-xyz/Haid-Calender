@@ -15,47 +15,33 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// DOM Elements
-const themeToggle = document.getElementById('themeToggle');
-const html = document.documentElement;
+// GROQ API KEY
+const GROQ_API_KEY = "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";
 
-// Theme Logic
+// Theme Toggle
+const themeToggle = document.getElementById('themeToggle');
 themeToggle.addEventListener('click', () => {
-    html.classList.toggle('dark');
-    const isDark = html.classList.contains('dark');
+    document.body.classList.toggle('dark-theme');
+    const isDark = document.body.classList.contains('dark-theme');
     themeToggle.innerHTML = isDark ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
 });
 
-// AI Recommendation Mockup (Logic Placeholder)
-function updateAIInsight(status) {
-    const statusEl = document.getElementById('statusHaid');
-    const recEl = document.getElementById('recommendations');
-
-    if (status === 'normal') {
-        statusEl.innerText = "Siklus Anda bulan ini terpantau normal. Tetap jaga hidrasi!";
-        recEl.innerHTML = `
-            <li>Konsumsi air kelapa atau cokelat hitam</li>
-            <li>Lakukan yoga ringan atau stretching</li>
-            <li>Istirahat minimal 7-8 jam</li>
-        `;
-    }
-}
-
-// Initialization
-document.addEventListener('DOMContentLoaded', () => {
-    document.getElementById('currentDate').innerText = new Date().toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
-    updateAIInsight('normal');
-});
-
-// Data Mockup (Nanti dikonek ke Firestore)
+// Data Mockup
 let cycleData = {
     start: "2024-05-05",
     end: "2024-05-10"
 };
 
 const monthNames = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
-let currentMonth = new Date().getMonth();
-let currentYear = new Date().getFullYear();
+let currentDateObj = new Date();
+let currentMonth = currentDateObj.getMonth();
+let currentYear = currentDateObj.getFullYear();
+
+// Initialization
+document.addEventListener('DOMContentLoaded', () => {
+    initCalendar();
+    updateAIInsight();
+});
 
 function initCalendar() {
     const grid = document.getElementById('calendarGrid');
@@ -79,26 +65,198 @@ function initCalendar() {
 
         if (dateStr === cycleData.start) classes += ' range-start';
         else if (dateStr === cycleData.end) classes += ' range-end';
-        else if (dateStr > cycleData.start && dateStr < cycleData.end) classes += ' in-range';
+        else if (cycleData.start && cycleData.end && dateStr > cycleData.start && dateStr < cycleData.end) classes += ' in-range';
 
         grid.innerHTML += `<div class="${classes}" onclick="selectDate('${dateStr}')">${day}</div>`;
     }
 }
 
-// Theme Toggle
-document.getElementById('themeToggle').addEventListener('click', () => {
-    document.body.classList.toggle('dark-theme');
-    const icon = document.querySelector('#themeToggle i');
-    icon.className = document.body.classList.contains('dark-theme') ? 'fas fa-sun' : 'fas fa-moon';
+document.getElementById('prevMonth').addEventListener('click', () => {
+    currentMonth--;
+    if (currentMonth < 0) { currentMonth = 11; currentYear--; }
+    initCalendar();
+});
+
+document.getElementById('nextMonth').addEventListener('click', () => {
+    currentMonth++;
+    if (currentMonth > 11) { currentMonth = 0; currentYear++; }
+    initCalendar();
 });
 
 window.selectDate = (date) => {
-    console.log("Selected:", date);
-    // Logika input start/end date haid
+    console.log("Date selected on calendar:", date);
 };
 
-window.openInput = (type) => {
-    alert(`Membuka Input untuk: ${type}`);
-};
+// Date inputs logic
+document.getElementById('startDateInput').addEventListener('change', (e) => {
+    cycleData.start = e.target.value;
+    initCalendar();
+    updateAIInsight();
+});
 
-document.addEventListener('DOMContentLoaded', initCalendar);
+document.getElementById('endDateInput').addEventListener('change', (e) => {
+    cycleData.end = e.target.value;
+    initCalendar();
+    updateAIInsight();
+});
+
+// AI Insight Logic with Groq
+async function updateAIInsight() {
+    const statusEl = document.getElementById('aiStatus');
+    const recEl = document.querySelector('.recommendation-grid');
+
+    if (!cycleData.start || !cycleData.end) return;
+
+    statusEl.innerText = "Status: AI menganalisis siklus Anda...";
+
+    if(GROQ_API_KEY === "ISI_API_KEY_GROQ_ANDA_DISINI") {
+        statusEl.innerText = "Status: API Key Groq belum diisi. Menampilkan data default.";
+        recEl.innerHTML = `
+            <div class="rec-item"><i class="fas fa-utensils"></i><span>Makanan: Air kelapa, cokelat hitam</span></div>
+            <div class="rec-item"><i class="fas fa-person-running"></i><span>Kegiatan: Yoga ringan, istirahat cukup</span></div>
+        `;
+        return;
+    }
+
+    try {
+        const prompt = `Siklus haid saya mulai tanggal ${cycleData.start} dan berakhir ${cycleData.end}. Hari ini tanggal ${new Date().toISOString().split('T')[0]}. Berikan analisis singkat status saya dan 2 rekomendasi (1 makanan, 1 kegiatan) dalam format JSON: {"status": "string singkat", "makanan": "string", "kegiatan": "string"}`;
+        
+        const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${GROQ_API_KEY}`
+            },
+            body: JSON.stringify({
+                model: "llama3-8b-8192",
+                messages: [{ role: "user", content: prompt }],
+                response_format: { type: "json_object" }
+            })
+        });
+        
+        const data = await response.json();
+        const result = JSON.parse(data.choices[0].message.content);
+        
+        statusEl.innerText = `Status: ${result.status}`;
+        recEl.innerHTML = `
+            <div class="rec-item"><i class="fas fa-utensils"></i><span>Makanan: ${result.makanan}</span></div>
+            <div class="rec-item"><i class="fas fa-person-running"></i><span>Kegiatan: ${result.kegiatan}</span></div>
+        `;
+    } catch (error) {
+        statusEl.innerText = "Status: Gagal menghubungi AI.";
+    }
+}
+
+// Chat AI Logic
+const openChatBtn = document.getElementById('openChatBtn');
+const closeChat = document.getElementById('closeChat');
+const chatModal = document.getElementById('chatModal');
+const chatBox = document.getElementById('chat-box');
+const chatInput = document.getElementById('chatInput');
+const sendChatBtn = document.getElementById('sendChatBtn');
+
+let chatHistory = [];
+
+openChatBtn.addEventListener('click', () => chatModal.classList.remove('hidden'));
+closeChat.addEventListener('click', () => chatModal.classList.add('hidden'));
+
+chatInput.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendChatMessage();
+        this.style.height = 'auto';
+    }
+});
+
+chatInput.addEventListener('input', function() {
+    this.style.height = 'auto'; 
+    this.style.height = Math.min(this.scrollHeight, 100) + 'px';
+});
+
+sendChatBtn.addEventListener('click', sendChatMessage);
+
+async function sendChatMessage() {
+    const msg = chatInput.value.trim();
+    if (!msg) return;
+
+    // Hide welcome card if exists
+    const welcome = chatBox.querySelector('.welcome-card');
+    if (welcome) welcome.remove();
+
+    const now = new Date();
+    const timeStr = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+
+    // Append User Message
+    chatBox.insertAdjacentHTML('beforeend', `
+        <div class="message outgoing">
+            <div class="bubble">${msg}<span class="time">${timeStr}</span></div>
+        </div>
+    `);
+    
+    chatInput.value = '';
+    
+    // Append AI Loading
+    chatBox.insertAdjacentHTML('beforeend', `
+        <div class="message incoming">
+            <div class="bubble" id="loadingBubble">
+                <i class="fas fa-circle-notch fa-spin"></i> AI sedang berpikir...
+                <span class="time">${timeStr}</span>
+            </div>
+        </div>
+    `);
+
+    chatBox.scrollTop = chatBox.scrollHeight;
+
+    chatHistory.push({ role: "user", content: msg });
+
+    if(GROQ_API_KEY === "ISI_API_KEY_GROQ_ANDA_DISINI") {
+        document.getElementById('loadingBubble').parentElement.remove();
+        chatBox.insertAdjacentHTML('beforeend', `
+            <div class="message incoming">
+                <div class="bubble">API Key Groq belum diatur di script.js! Silakan isi variabel GROQ_API_KEY.<span class="time">${timeStr}</span></div>
+            </div>
+        `);
+        return;
+    }
+
+    try {
+        const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${GROQ_API_KEY}`
+            },
+            body: JSON.stringify({
+                model: 'llama3-70b-8192',
+                messages: [
+                    { role: "system", content: "Kamu adalah Lita AI, asisten spesialis kesehatan reproduksi wanita, kewanitaan, dan siklus haid. Jawab dengan ramah, suportif, informatif, dan ringkas menggunakan bahasa Indonesia yang baik." },
+                    ...chatHistory.slice(-5) // Send last 5 messages for context
+                ]
+            })
+        });
+
+        const data = await response.json();
+        const jawaban = data.choices[0].message.content;
+        
+        chatHistory.push({ role: "assistant", content: jawaban });
+
+        // Remove loading bubble
+        document.getElementById('loadingBubble').parentElement.remove();
+
+        // Append real AI response
+        chatBox.insertAdjacentHTML('beforeend', `
+            <div class="message incoming">
+                <div class="bubble">${jawaban.replace(/\n/g, '<br>')}<span class="time">${timeStr}</span></div>
+            </div>
+        `);
+        
+        chatBox.scrollTop = chatBox.scrollHeight;
+    } catch (error) {
+        document.getElementById('loadingBubble').parentElement.remove();
+        chatBox.insertAdjacentHTML('beforeend', `
+            <div class="message incoming">
+                <div class="bubble">Gagal terhubung ke AI.<span class="time">${timeStr}</span></div>
+            </div>
+        `);
+    }
+}
