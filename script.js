@@ -264,13 +264,28 @@ function initCalendar() {
         }
 
         // Fill Days
+        const today = new Date();
+        const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+
+        // Find an ongoing cycle (has start, no end) in cycleHistory
+        const ongoingCycle = cycleHistory.find(c => c.start && !c.end);
+
         for (let day = 1; day <= daysInMonth; day++) {
             const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
             let classes = 'day';
 
-            if (cycleHistory.some(c => c.start === dateStr)) classes += ' range-start';
-            else if (cycleHistory.some(c => c.end === dateStr)) classes += ' range-end';
-            else if (cycleHistory.some(c => c.start && c.end && dateStr > c.start && dateStr < c.end)) classes += ' in-range';
+            if (cycleHistory.some(c => c.start === dateStr)) {
+                classes += ' range-start';
+                // If this is the start of an ongoing cycle, mark it too
+                if (ongoingCycle && ongoingCycle.start === dateStr) classes += ' ongoing';
+            } else if (cycleHistory.some(c => c.end === dateStr)) {
+                classes += ' range-end';
+            } else if (cycleHistory.some(c => c.start && c.end && dateStr > c.start && dateStr < c.end)) {
+                classes += ' in-range';
+            } else if (ongoingCycle && dateStr > ongoingCycle.start && dateStr <= todayStr) {
+                // Mark days from start to today as ongoing
+                classes += ' ongoing';
+            }
 
             grid.innerHTML += `<div class="${classes}" onclick="selectDate('${dateStr}')">${day}</div>`;
         }
@@ -339,11 +354,14 @@ async function updateAIInsight() {
     }
 
     try {
-        let historyText = cycleHistory.map(c => `Bulan ${c.start ? new Date(c.start).getMonth() + 1 : '?'}: Mulai ${c.start}, Selesai ${c.end}`).join('; ');
+        let historyText = cycleHistory.map(c => `Bulan ${c.start ? new Date(c.start).getMonth() + 1 : '?'}: Mulai ${c.start}, Selesai ${c.end || 'belum selesai (sedang berlangsung)'}`).join('; ');
         const noteContext = cycleData.note ? `. Catatan terakhir bulan ini: ${cycleData.note}.` : "";
         const profileContext = userProfile.name ? ` Nama saya ${userProfile.name}, umur ${userProfile.age} tahun. Durasi haid normal saya ${userProfile.duration} hari. Keluhan umum: ${userProfile.condition}.` : "";
         const personaContext = `Gunakan gaya bicara yang ${aiPersona.tone} dan gaya penulisan yang ${aiPersona.style}.`;
-        const prompt = `Riwayat haid saya beberapa bulan terakhir: ${historyText}. Hari ini tanggal ${new Date().toISOString().split('T')[0]}${noteContext}${profileContext} ${personaContext} Berikan analisis singkat status saya dan 2 rekomendasi (1 makanan dan minuman, 1 kegiatan) dalam format JSON: {"status": "string", "makanan dan minuman": "string", "kegiatan": "string"}. Ingat, kembalikan HANYA JSON murni tanpa markdown, tanpa kalimat tambahan.`;
+        // Detect ongoing cycle
+        const ongoingCycle = cycleHistory.find(c => c.start && !c.end);
+        const ongoingContext = ongoingCycle ? ` PENTING: Siklus haid saya SEDANG BERLANGSUNG sejak ${ongoingCycle.start} dan belum ada tanggal akhir haid.` : "";
+        const prompt = `Riwayat haid saya beberapa bulan terakhir: ${historyText}. Hari ini tanggal ${new Date().toISOString().split('T')[0]}${noteContext}${profileContext}${ongoingContext} ${personaContext} Berikan analisis singkat status saya dan 2 rekomendasi (1 makanan dan minuman, 1 kegiatan) dalam format JSON: {"status": "string", "makanan dan minuman": "string", "kegiatan": "string"}. Ingat, kembalikan HANYA JSON murni tanpa markdown, tanpa kalimat tambahan.`;
 
         const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
             method: "POST",
