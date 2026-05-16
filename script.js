@@ -167,7 +167,7 @@ async function updateAIInsight() {
                 "Authorization": `Bearer ${GROQ_API_KEY}`
             },
             body: JSON.stringify({
-                model: "llama3-70b-8192",
+                model: "llama-3.3-70b-versatile",
                 messages: [{ role: "user", content: prompt }]
             })
         });
@@ -275,7 +275,7 @@ async function sendChatMessage() {
                 'Authorization': `Bearer ${GROQ_API_KEY}`
             },
             body: JSON.stringify({
-                model: 'llama3-70b-8192',
+                model: 'llama-3.3-70b-versatile',
                 messages: [
                     { role: "system", content: `Kamu adalah Aina AI, asisten spesialis kesehatan reproduksi wanita. User saat ini sedang mencatat siklus haid dari ${cycleData.start} s/d ${cycleData.end}. Catatan keluhan: ${cycleData.note || 'tidak ada'}. Jawab dengan ramah, suportif, informatif, dan ringkas menggunakan bahasa Indonesia.` },
                     ...chatHistory.slice(-5) // Send last 5 messages for context
