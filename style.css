@@ -62,7 +62,28 @@ body {
 .calendar-header {
     display: flex;
     justify-content: space-between;
+    align-items: center;
     margin-bottom: 20px;
+}
+
+.calendar-header button {
+    background: var(--secondary);
+    color: var(--primary);
+    border: none;
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: var(--transition);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.calendar-header button:hover {
+    background: var(--primary);
+    color: white;
+    transform: scale(1.05);
 }
 
 .calendar-grid-header,
