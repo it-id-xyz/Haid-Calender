@@ -207,7 +207,29 @@ body {
 }
 
 /* Custom Graph */
+.chart-wrapper {
+    display: flex;
+    position: relative;
+    padding-left: 25px;
+}
+
+.y-axis {
+    position: absolute;
+    left: 0;
+    top: 20px;
+    bottom: 0;
+    width: 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    font-size: 0.65rem;
+    color: var(--text-light);
+    text-align: right;
+    padding-bottom: 25px;
+}
+
 .chart-container {
+    flex: 1;
     height: 150px;
     display: flex;
     align-items: flex-end;
