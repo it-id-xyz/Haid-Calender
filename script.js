@@ -29,7 +29,8 @@ themeToggle.addEventListener('click', () => {
 // Data Mockup
 let cycleData = {
     start: "2024-05-05",
-    end: "2024-05-10"
+    end: "2024-05-10",
+    note: ""
 };
 
 const monthNames = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
@@ -41,34 +42,61 @@ let currentYear = currentDateObj.getFullYear();
 document.addEventListener('DOMContentLoaded', () => {
     initCalendar();
     updateAIInsight();
+    renderChart();
 });
+
+function renderChart() {
+    const chart = document.getElementById('cycleChart');
+    chart.innerHTML = '';
+    if (!cycleData.start || !cycleData.end) {
+        chart.innerHTML = '<p style="text-align:center; width:100%; color:var(--text-light); font-size: 0.9rem; margin-top: 20px;">Belum ada siklus yang dicatat.</p>';
+        return;
+    }
+    
+    // Create a dynamic chart based on current month
+    const currentM = new Date(cycleData.start).getMonth();
+    for(let i = 4; i >= 0; i--) {
+        let m = currentM - i;
+        if(m < 0) m += 12;
+        // Simulate previous cycles based on random height, except current one
+        const h = i === 0 ? 28 : Math.floor(Math.random() * 10) + 25;
+        const isActive = i === 0 ? 'active' : '';
+        chart.innerHTML += `<div class="bar ${isActive}" style="--h: ${h}px" data-label="${monthNames[m].substring(0,3)}"></div>`;
+    }
+}
 
 function initCalendar() {
     const grid = document.getElementById('calendarGrid');
     const monthDisplay = document.getElementById('monthDisplay');
-    grid.innerHTML = '';
+    
+    grid.style.opacity = 0;
+    setTimeout(() => {
+        grid.innerHTML = '';
+        monthDisplay.innerText = `${monthNames[currentMonth]} ${currentYear}`;
+        
+        const firstDay = new Date(currentYear, currentMonth, 1).getDay();
+        const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
 
-    monthDisplay.innerText = `${monthNames[currentMonth]} ${currentYear}`;
+        // Fill Empty Slots
+        for (let i = 0; i < (firstDay === 0 ? 6 : firstDay - 1); i++) {
+            grid.innerHTML += `<div></div>`;
+        }
 
-    const firstDay = new Date(currentYear, currentMonth, 1).getDay();
-    const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+        // Fill Days
+        for (let day = 1; day <= daysInMonth; day++) {
+            const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+            let classes = 'day';
 
-    // Fill Empty Slots
-    for (let i = 0; i < (firstDay === 0 ? 6 : firstDay - 1); i++) {
-        grid.innerHTML += `<div></div>`;
-    }
+            if (dateStr === cycleData.start) classes += ' range-start';
+            else if (dateStr === cycleData.end) classes += ' range-end';
+            else if (cycleData.start && cycleData.end && dateStr > cycleData.start && dateStr < cycleData.end) classes += ' in-range';
 
-    // Fill Days
-    for (let day = 1; day <= daysInMonth; day++) {
-        const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-        let classes = 'day';
-
-        if (dateStr === cycleData.start) classes += ' range-start';
-        else if (dateStr === cycleData.end) classes += ' range-end';
-        else if (cycleData.start && cycleData.end && dateStr > cycleData.start && dateStr < cycleData.end) classes += ' in-range';
-
-        grid.innerHTML += `<div class="${classes}" onclick="selectDate('${dateStr}')">${day}</div>`;
-    }
+            grid.innerHTML += `<div class="${classes}" onclick="selectDate('${dateStr}')">${day}</div>`;
+        }
+        
+        grid.style.transition = "opacity 0.3s ease";
+        grid.style.opacity = 1;
+    }, 150);
 }
 
 document.getElementById('prevMonth').addEventListener('click', () => {
@@ -87,17 +115,27 @@ window.selectDate = (date) => {
     console.log("Date selected on calendar:", date);
 };
 
+window.openCatatan = () => {
+    const note = prompt("Masukkan catatan (contoh: Kram perut, mood swing, dll):", cycleData.note || "");
+    if (note !== null) {
+        cycleData.note = note;
+        updateAIInsight();
+    }
+};
+
 // Date inputs logic
 document.getElementById('startDateInput').addEventListener('change', (e) => {
     cycleData.start = e.target.value;
     initCalendar();
     updateAIInsight();
+    renderChart();
 });
 
 document.getElementById('endDateInput').addEventListener('change', (e) => {
     cycleData.end = e.target.value;
     initCalendar();
     updateAIInsight();
+    renderChart();
 });
 
 // AI Insight Logic with Groq
@@ -109,7 +147,7 @@ async function updateAIInsight() {
 
     statusEl.innerText = "Status: AI menganalisis siklus Anda...";
 
-    if (GROQ_API_KEY === "ISI_API_KEY_GROQ_ANDA_DISINI") {
+    if (!GROQ_API_KEY || GROQ_API_KEY.includes("ISI_API_KEY")) {
         statusEl.innerText = "Status: API Key Groq belum diisi. Menampilkan data default.";
         recEl.innerHTML = `
             <div class="rec-item"><i class="fas fa-utensils"></i><span>Makanan: Air kelapa, cokelat hitam</span></div>
@@ -119,7 +157,8 @@ async function updateAIInsight() {
     }
 
     try {
-        const prompt = `Siklus haid saya mulai tanggal ${cycleData.start} dan berakhir ${cycleData.end}. Hari ini tanggal ${new Date().toISOString().split('T')[0]}. Berikan analisis singkat status saya dan 2 rekomendasi (1 makanan dan minuman, 1 kegiatan) dalam format JSON: {"status": "string", "makanan dan minuman": "string", "kegiatan": "string"}. Ingat, kembalikan HANYA JSON murni tanpa markdown, tanpa kalimat tambahan.`;
+        const noteContext = cycleData.note ? `. Catatan tambahan saya: ${cycleData.note}.` : "";
+        const prompt = `Siklus haid saya mulai tanggal ${cycleData.start} dan berakhir ${cycleData.end}. Hari ini tanggal ${new Date().toISOString().split('T')[0]}${noteContext} Berikan analisis singkat status saya dan 2 rekomendasi (1 makanan dan minuman, 1 kegiatan) dalam format JSON: {"status": "string", "makanan dan minuman": "string", "kegiatan": "string"}. Ingat, kembalikan HANYA JSON murni tanpa markdown, tanpa kalimat tambahan.`;
 
         const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
             method: "POST",
@@ -128,7 +167,7 @@ async function updateAIInsight() {
                 "Authorization": `Bearer ${GROQ_API_KEY}`
             },
             body: JSON.stringify({
-                model: "llama-3.3-70b-versatile",
+                model: "llama3-70b-8192",
                 messages: [{ role: "user", content: prompt }]
             })
         });
@@ -144,10 +183,11 @@ async function updateAIInsight() {
         }
 
         const result = JSON.parse(content);
+        const makananValue = result["makanan dan minuman"] || result.makanan || "Air putih yang cukup";
 
         statusEl.innerText = `Status: ${result.status}`;
         recEl.innerHTML = `
-            <div class="rec-item"><i class="fas fa-utensils"></i><span>Makanan: ${result.makanan}</span></div>
+            <div class="rec-item"><i class="fas fa-utensils"></i><span>Makanan: ${makananValue}</span></div>
             <div class="rec-item"><i class="fas fa-person-running"></i><span>Kegiatan: ${result.kegiatan}</span></div>
         `;
     } catch (error) {
@@ -217,7 +257,7 @@ async function sendChatMessage() {
 
     chatHistory.push({ role: "user", content: msg });
 
-    if (GROQ_API_KEY === "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") {
+    if (!GROQ_API_KEY || GROQ_API_KEY.includes("ISI_API_KEY")) {
         document.getElementById('loadingBubble').parentElement.remove();
         chatBox.insertAdjacentHTML('beforeend', `
             <div class="message incoming">
@@ -235,9 +275,9 @@ async function sendChatMessage() {
                 'Authorization': `Bearer ${GROQ_API_KEY}`
             },
             body: JSON.stringify({
-                model: 'llama-3.3-70b-versatile',
+                model: 'llama3-70b-8192',
                 messages: [
-                    { role: "system", content: "Kamu adalah Aina AI, asisten spesialis kesehatan reproduksi wanita, kewanitaan, dan siklus haid. Jawab dengan ramah, suportif, informatif, dan ringkas menggunakan bahasa Indonesia yang baik." },
+                    { role: "system", content: `Kamu adalah Aina AI, asisten spesialis kesehatan reproduksi wanita. User saat ini sedang mencatat siklus haid dari ${cycleData.start} s/d ${cycleData.end}. Catatan keluhan: ${cycleData.note || 'tidak ada'}. Jawab dengan ramah, suportif, informatif, dan ringkas menggunakan bahasa Indonesia.` },
                     ...chatHistory.slice(-5) // Send last 5 messages for context
                 ]
             })
