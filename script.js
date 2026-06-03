@@ -19,7 +19,7 @@ const auth = getAuth(app);
 const provider = new GoogleAuthProvider();
 
 // GROQ API KEY
-const GROQ_API_KEY = "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";
+const GROQ_API_KEY = "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";
 
 // Theme Toggle
 const themeToggle = document.getElementById('themeToggle');
