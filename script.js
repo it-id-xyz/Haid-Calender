@@ -42,6 +42,8 @@ const userAvatar = document.getElementById('userAvatar');
 const logoutBtn = document.getElementById('logoutBtn');
 const greetingText = document.getElementById('greetingText');
 
+const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
 onAuthStateChanged(auth, async (user) => {
     if (user) {
         currentUser = user;
@@ -50,10 +52,8 @@ onAuthStateChanged(auth, async (user) => {
         userAvatar.src = user.photoURL || 'https://via.placeholder.com/35';
         await loadUserData(user.email);
         initCalendar();
-        setTimeout(() => {    
-            updateAIInsight();
-        },60000);
         renderChart();
+        updateAIInsight();
     } else {
         currentUser = null;
         loginOverlay.classList.remove('hidden');
@@ -105,7 +105,9 @@ saveProfileBtn.addEventListener('click', () => {
     userProfile.condition = document.getElementById('profileCondition').value;
     saveUserData();
     updateGreeting();
-    updateAIInsight();
+    setTimeout(() => {
+        updateAIInsight();   
+    }, 60000);
     profileModal.classList.add('hidden');
 });
 
@@ -318,7 +320,9 @@ window.openCatatan = () => {
     if (note !== null) {
         cycleData.note = note;
         saveUserData();
-        updateAIInsight();
+        setTimeout(() => {
+            updateAIInsight();   
+        }, 60000);
     }
 };
 
@@ -326,14 +330,18 @@ window.openCatatan = () => {
 document.getElementById('startDateInput').addEventListener('change', (e) => {
     saveCycle('start', e.target.value);
     initCalendar();
-    updateAIInsight();
+    setTimeout(() => {
+        updateAIInsight();   
+    }, 60000);
     renderChart();
 });
 
 document.getElementById('endDateInput').addEventListener('change', (e) => {
     saveCycle('end', e.target.value);
     initCalendar();
-    updateAIInsight();
+    setTimeout(() => {
+        updateAIInsight();   
+    }, 60000);
     renderChart();
 });
 
