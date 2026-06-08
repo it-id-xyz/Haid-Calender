@@ -105,9 +105,7 @@ saveProfileBtn.addEventListener('click', () => {
     userProfile.condition = document.getElementById('profileCondition').value;
     saveUserData();
     updateGreeting();
-    setTimeout(() => {
-        updateAIInsight();   
-    }, 60000);
+    setTimeout(() => updateAIInsight(), 60000);
     profileModal.classList.add('hidden');
 });
 
@@ -320,9 +318,7 @@ window.openCatatan = () => {
     if (note !== null) {
         cycleData.note = note;
         saveUserData();
-        setTimeout(() => {
-            updateAIInsight();   
-        }, 60000);
+        setTimeout(() => updateAIInsight(), 60000);
     }
 };
 
@@ -330,18 +326,14 @@ window.openCatatan = () => {
 document.getElementById('startDateInput').addEventListener('change', (e) => {
     saveCycle('start', e.target.value);
     initCalendar();
-    setTimeout(() => {
-        updateAIInsight();   
-    }, 60000);
+    setTimeout(() => updateAIInsight(), 60000);
     renderChart();
 });
 
 document.getElementById('endDateInput').addEventListener('change', (e) => {
     saveCycle('end', e.target.value);
     initCalendar();
-    setTimeout(() => {
-        updateAIInsight();   
-    }, 60000);
+    setTimeout(() => updateAIInsight(), 60000);
     renderChart();
 });
 
