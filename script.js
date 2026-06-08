@@ -50,9 +50,9 @@ onAuthStateChanged(auth, async (user) => {
         userAvatar.src = user.photoURL || 'https://via.placeholder.com/35';
         await loadUserData(user.email);
         initCalendar();
-        setTimeout(() = {    
+        setTimeout(() => {    
             updateAIInsight();
-        },60000)
+        },60000);
         renderChart();
     } else {
         currentUser = null;
